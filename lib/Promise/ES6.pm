@@ -25,12 +25,12 @@ Promise::ES6 - ES6-style promises in Perl
 
     my $promise4 = $promise->finally( sub { .. } );
 
-    my $resolved = Promise->resolve(5);
-    my $rejected = Promise->reject('nono');
+    my $resolved = Promise::ES6->resolve(5);
+    my $rejected = Promise::ES6->reject('nono');
 
-    my $all_promise = Promise->all( \@promises );
+    my $all_promise = Promise::ES6->all( \@promises );
 
-    my $race_promise = Promise->race( \@promises );
+    my $race_promise = Promise::ES6->race( \@promises );
 
 =head1 DESCRIPTION
 
@@ -48,6 +48,17 @@ not a list. (This accords with the standard.)
 =item * A C<finally()> method is defined.
 
 =back
+
+=head1 COMPATIBILITY
+
+Right now this doesn’t try for interoperability with other promise
+classes. If that’s something you want, make a feature request.
+
+=head1 SEE ALSO
+
+If you’re not sure of what promises are, there are several good
+introductions to the topic. You might start with
+L<this one|https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises>.
 
 =cut
 
