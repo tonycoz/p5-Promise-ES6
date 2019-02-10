@@ -23,10 +23,6 @@ WriteMakefile1(
     ABSTRACT_FROM => 'lib/Promise/ES6.pm',
     LICENSE      => 'perl',
 
-    # 5.6 doesn’t work on Travis CI.
-    # It’s probably not worth supporting.
-    MIN_PERL_VERSION => 5.008000,
-
     TEST_REQUIRES => {
         'FindBin'         => 0,
         'Test::Fatal' => 0,
