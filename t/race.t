@@ -117,11 +117,11 @@ sub race_fail : Tests {
     });
 
     local $SIG{'USR1'} = sub {
-        (shift @resolves)->();
+        (shift @resolves)->() if @resolves;
     };
 
     my $pid = fork or do {
-        while (1) {
+        while (shift @resolves) {
             kill 'USR1', getppid();
             Time::HiRes::sleep(0.1);
         }
@@ -129,8 +129,9 @@ sub race_fail : Tests {
         exit;
     };
 
+    # This failed once on Travis, but I couldn’t reproduce it …
     is_deeply exception {
-        $self->await( Promise::ES6->race([$p1, $p2]) )
+        diag $self->await( Promise::ES6->race([$p1, $p2]) )
     }, { message => 'fail' };
 
     kill 'KILL', $pid;
