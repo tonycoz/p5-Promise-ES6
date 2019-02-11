@@ -31,7 +31,7 @@ also removes superfluous dependencies on [AnyEvent](https://metacpan.org/pod/Any
 
 The interface is the same, except:
 
-- Promise resolutions and rejections take exactly one argument,
+- Promise resolutions and rejections accept exactly one argument,
 not a list. (This accords with the standard.)
 - A `finally()` method is defined.
 
