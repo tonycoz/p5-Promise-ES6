@@ -196,7 +196,7 @@ sub race {
     my ($class, $iterable) = @_;
     my @promises = map { _is_promise($_) ? $_ : $class->resolve($_) } @$iterable;
 
-    return Promise::ES6::Race->new(sub {
+    return $class->new(sub {
         my ($resolve, $reject) = @_;
 
         my $is_done;
@@ -227,9 +227,5 @@ sub _is_promise {
     local $@;
     return eval { $_[0]->isa(__PACKAGE__) };
 }
-
-package Promise::ES6::Race;
-
-use parent -norequire => 'Promise::ES6';
 
 1;
