@@ -28,7 +28,7 @@ sub race : Tests {
     });
 
     local $SIG{'USR1'} = sub {
-        (shift @resolves)->();
+        (shift @resolves)->() if @resolves;
     };
 
     my $pid = fork or do {
@@ -52,28 +52,16 @@ sub race_with_value : Tests {
 
     my $resolve_cr;
 
-    my $p1 = Promise::ES6->new(sub {
-        my ($resolve, $reject) = @_;
+    # This will never resolve.
+    my $p1 = Promise::ES6->new(sub {});
 
-        $resolve_cr = sub { $resolve->(1) };
-    });
     my $p2 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
         $resolve->(2);
     });
 
-    local $SIG{'USR1'} = sub {
-        $resolve_cr->();
-    };
-
-    local $SIG{'CHLD'} = 'IGNORE';
-    fork or do {
-        kill 'USR1', getppid();
-
-        exit;
-    };
-
     my $value = $self->await( Promise::ES6->race([$p1, $p2]) );
+
     is $value, 2, 'got raw value instantly';
 }
 
@@ -94,7 +82,7 @@ sub race_success : Tests {
     });
 
     local $SIG{'USR1'} = sub {
-        (shift @resolves)->();
+        (shift @resolves)->() if @resolves;
     };
 
     my $pid = fork or do {

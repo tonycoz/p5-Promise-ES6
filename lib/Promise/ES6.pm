@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.01-TRIAL1';
+our $VERSION = '0.01-TRIAL2';
 
 =encoding utf-8
 
@@ -109,7 +109,7 @@ sub finally {
 sub _finish {
     my ($self, $how, $value) = @_;
 
-    die "$self already finished!" if $self->{'_finished'};
+    die "$self already finished!" if $self->{'_finished_how'};
 
     local $@;
 
@@ -196,14 +196,27 @@ sub race {
     my ($class, $iterable) = @_;
     my @promises = map { _is_promise($_) ? $_ : $class->resolve($_) } @$iterable;
 
-    return $class->new(sub {
+    return Promise::ES6::Race->new(sub {
         my ($resolve, $reject) = @_;
+
+        my $is_done;
+
         for my $promise (@promises) {
+            last if $is_done;
+
             $promise->then(sub {
                 my ($value) = @_;
+
+                return if $is_done;
+                $is_done = 1;
+
                 $resolve->($value);
             }, sub {
                 my ($reason) = @_;
+
+                return if $is_done;
+                $is_done = 1;
+
                 $reject->($reason);
             });
         }
@@ -214,5 +227,9 @@ sub _is_promise {
     local $@;
     return eval { $_[0]->isa(__PACKAGE__) };
 }
+
+package Promise::ES6::Race;
+
+use parent -norequire => 'Promise::ES6';
 
 1;
