@@ -42,7 +42,7 @@ The interface is the same, except:
 
 =over
 
-=item * Promise resolutions and rejections take exactly one argument,
+=item * Promise resolutions and rejections accept exactly one argument,
 not a list. (This accords with the standard.)
 
 =item * A C<finally()> method is defined.
