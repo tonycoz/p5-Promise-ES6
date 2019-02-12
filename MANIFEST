@@ -10,7 +10,6 @@ t/00_compile.t
 t/all.t
 t/await.t
 t/catch.t
-t/lib/.PromiseTest.pm.swp
 t/lib/PromiseTest.pm
 t/multi_then.t
 t/race.t
