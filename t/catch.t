@@ -48,23 +48,30 @@ sub then_reject_catch : Tests {
 sub asyncreject_catch : Tests {
     my ($self) = @_;
 
-    my $reject;
-    local $SIG{'USR1'} = sub { $reject->('oh my god!') };
+    my @checkers;
 
     my $p = Promise::ES6->new(sub {
-        (undef, $reject) = @_;
+        (undef, my $reject) = @_;
 
-        local $SIG{'CHLD'} = 'IGNORE';
-        fork or do {
-            Time::HiRes::sleep(0.1);
-            kill 'USR1', getppid();
-            exit;
+        push @checkers, sub {
+            if ($self->has_happened('thing')) {
+                $reject->('oh my god!');
+            }
         };
     })->catch(sub {
         my ($reason) = @_;
         return $reason;
     });
-    is $self->await($p), 'oh my god!';
+
+    my $pid = fork or do {
+        Time::HiRes::sleep(0.1);
+        $self->happen('thing');
+        exit;
+    };
+
+    is $self->await($p, \@checkers), 'oh my god!';
+
+    waitpid $pid, 0;
 }
 
 sub exception_catch : Tests {
@@ -124,4 +131,4 @@ sub exception_catch_then_await : Tests {
     is_deeply $self->await($p), { recover => 1, reason => { message => 'oh my god!!!' } };
 }
 
-__PACKAGE__->runtests;
+__PACKAGE__->new()->runtests;

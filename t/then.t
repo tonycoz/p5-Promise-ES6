@@ -17,19 +17,18 @@ sub then_success : Tests {
 
     my @todo;
 
-    local $SIG{'USR1'} = sub {
-        (shift @todo)->();
-    };
-
     my $test_value = 'first';
 
     my $p = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
         push @todo, sub {
-            is $test_value, 'first';
-            $test_value = 'second';
-            $resolve->('first resolve');
+            if ($self->has_happened('ready1') && !$self->has_happened('resolved1')) {
+                is $test_value, 'first';
+                $test_value = 'second';
+                $resolve->('first resolve');
+                $self->happen('resolved1');
+            }
         };
     })->then(sub {
         my ($value) = @_;
@@ -48,24 +47,31 @@ sub then_success : Tests {
             my ($resolve, $reject) = @_;
 
             push @todo, sub {
-                is $test_value, 'fourth';
-                $test_value = 'fifth';
-                $resolve->('third resolve');
+                if ($self->has_happened('ready2') && !$self->has_happened('resolved2')) {
+                    is $test_value, 'fourth';
+                    $test_value = 'fifth';
+                    $resolve->('third resolve');
+                    $self->happen('resolved2');
+                }
             };
         });
     });
 
-    local $SIG{'CHLD'} = 'IGNORE';
-    fork or do {
-        for (1, 2) {
-            Time::HiRes::sleep(0.2);
-            kill 'USR1', getppid();
-        }
+    my $pid = fork or do {
+        Time::HiRes::sleep(0.2);
+
+        $self->happen('ready1');
+
+        Time::HiRes::sleep(0.2);
+
+        $self->happen('ready2');
 
         exit;
     };
 
-    is( $self->await($p), 'third resolve' );
+    is( $self->await($p, \@todo), 'third resolve' );
+
+    waitpid $pid, 0;
 }
 
 sub then_success_with_no_handler : Tests {
@@ -75,29 +81,29 @@ sub then_success_with_no_handler : Tests {
 
     my @todo;
 
-    local $SIG{'USR1'} = sub {
-        (shift @todo)->();
-    };
-
     my $p = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
         push @todo, sub {
-            is $test_value, 'first';
-            $test_value = 'second';
-            $resolve->('first resolve');
+            if ($self->has_happened('ready1') && !$self->has_happened('resolved1')) {
+                is $test_value, 'first';
+                $test_value = 'second';
+                $resolve->('first resolve');
+                $self->happen('resolved1');
+            }
         };
     });
 
-    local $SIG{'CHLD'} = 'IGNORE';
-    fork or do {
+    my $pid = fork or do {
         Time::HiRes::sleep(0.2);
-        kill 'USR1', getppid();
+        $self->happen('ready1');
 
         exit;
     };
 
-    is( $self->await($p), 'first resolve' );
+    is( $self->await($p, \@todo), 'first resolve' );
+
+    waitpid $pid, 0;
 }
 
 sub already_resolved : Tests {

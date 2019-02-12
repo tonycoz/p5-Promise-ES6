@@ -69,61 +69,75 @@ sub await_with_async : Tests {
 
     my $resolve;
 
-    local $SIG{'USR1'} = sub {
-        $resolve->(123);
-    };
+    my @checkers;
 
     my $promise = Promise::ES6->new(sub {
         ($resolve) = @_;
 
-        local $SIG{'CHLD'} = 'IGNORE';
-        fork or do {
-            Time::HiRes::sleep(0.1);
-            kill 'USR1', getppid();
-            exit;
+        push @checkers, sub {
+            if ($self->has_happened('waited') && !$self->has_happened('resolved')) {
+                $self->happen('resolved');
+                $resolve->(123);
+            }
         };
     });
 
+    my $pid = fork or do {
+        Time::HiRes::sleep(0.1);
+        $self->happen('waited');
+        exit;
+    };
+
     isa_ok $promise, 'Promise::ES6';
-    is $self->await($promise), 123, 'get resolved value';
+    is $self->await($promise, \@checkers), 123, 'get resolved value';
+
+    waitpid $pid, 0;
 }
 
 sub then_await_with_async : Tests {
     my ($self) = @_;
 
-    my @resolves;
-
-    local $SIG{'USR1'} = sub {
-       (shift @resolves)->(); 
-    };
+    my @checkers;
 
     my $promise = Promise::ES6->new(sub {
         my ($resolve) = @_;
 
-        push @resolves, sub { $resolve->(123) };
+        push @checkers, sub {
+            if ($self->has_happened('ready1') && !$self->has_happened('resolve1')) {
+                $self->happen('resolve1');
+                $resolve->(123);
+            }
+        };
     })->then(sub {
         my ($value) = @_;
 
         return Promise::ES6->new(sub {
             my ($resolve, $reject) = @_;
 
-            push @resolves, sub { $resolve->($value * 2) };
+            push @checkers, sub {
+                if ($self->has_happened('ready2') && !$self->has_happened('resolve2')) {
+                    $self->happen('resolve2');
+                    $resolve->($value * 2);
+                }
+            };
         });
     });
 
-    local $SIG{'CHLD'} = 'IGNORE';
-    fork or do {
-        Time::HiRes::sleep(0.1);
-        kill 'USR1', getppid();
+    my $pid = fork or do {
 
         Time::HiRes::sleep(0.1);
-        kill 'USR1', getppid();
+        $self->happen('ready1');
+
+        Time::HiRes::sleep(0.1);
+        $self->happen('ready2');
 
         exit;
     };
 
     isa_ok $promise, 'Promise::ES6';
-    is $self->await($promise), 123 * 2;
+    is $self->await($promise, \@checkers), 123 * 2;
+
+    waitpid $pid, 0;
 }
 
-__PACKAGE__->runtests;
+__PACKAGE__->new()->runtests;

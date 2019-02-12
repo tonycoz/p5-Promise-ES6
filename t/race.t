@@ -20,30 +20,41 @@ sub race : Tests {
 
     my $p1 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
-        $resolves[1] = sub { $resolve->(1) };
+
+        push @resolves, sub {
+            if ($self->has_happened('ready1') && !$self->has_happened('resolved1')) {
+                $resolve->(1);
+                $self->happen('resolved1');
+            }
+        };
     });
+
     my $p2 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
-        $resolves[0] = sub { $resolve->(2) };
+
+        push @resolves, sub {
+            if ($self->has_happened('ready2') && !$self->has_happened('resolved2')) {
+                $resolve->(2);
+                $self->happen('resolved2');
+            }
+        };
     });
 
-    local $SIG{'USR1'} = sub {
-        (shift @resolves)->() if @resolves;
-    };
-
     my $pid = fork or do {
-        while (1) {
-            kill 'USR1', getppid();
-            Time::HiRes::sleep(0.1);
-        }
+        $self->happen('ready2');
+
+        $self->wait_until('resolved2');
+
+        $self->happen('ready1');
 
         exit;
     };
 
-    my $value = $self->await( Promise::ES6->race([$p1, $p2]) );
+    my $race = Promise::ES6->race([$p1, $p2]);
+
+    my $value = $self->await( $race, \@resolves );
     is $value, 2;
 
-    kill 'KILL', $pid;
     waitpid $pid, 0;
 }
 
@@ -73,31 +84,39 @@ sub race_success : Tests {
     my $p1 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
-        $resolves[0] = sub { $resolve->(1); }
+        push @resolves, sub {
+            if ($self->has_happened('ready1') && !$self->has_happened('resolved1')) {
+                $resolve->(1);
+                $self->happen('resolved1');
+            }
+        };
     });
     my $p2 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
-        $resolves[1] = sub { $reject->({ message => 'fail' }); }
+        push @resolves, sub {
+            if ($self->has_happened('ready2') && !$self->has_happened('resolved2')) {
+                $reject->({ message => 'fail' });
+                $self->happen('resolved2');
+            }
+        };
     });
 
-    local $SIG{'USR1'} = sub {
-        (shift @resolves)->() if @resolves;
-    };
-
     my $pid = fork or do {
-        while (1) {
-            kill 'USR1', getppid();
-            Time::HiRes::sleep(0.1);
-        }
+        $self->happen('ready1');
+
+        $self->wait_until('resolved1');
+
+        $self->happen('ready2');
 
         exit;
     };
 
-    my $value = $self->await( Promise::ES6->race([$p1, $p2]) );
+    my $race = Promise::ES6->race([$p1, $p2]);
+
+    my $value = $self->await( $race, \@resolves );
     is $value, 1;
 
-    kill 'KILL', $pid;
     waitpid $pid, 0;
 }
 
@@ -108,34 +127,43 @@ sub race_fail : Tests {
 
     my $p1 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
-        $resolves[1] = sub { $resolve->(1); }
+
+        push @resolves, sub {
+            if ($self->has_happened('ready1') && !$self->has_happened('resolved1')) {
+                $resolve->(1);
+                $self->happen('resolved1');
+            }
+        };
     });
 
     my $p2 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
-        $resolves[0] = sub { $reject->({ message => 'fail' }); }
+
+        push @resolves, sub {
+            if ($self->has_happened('ready2') && !$self->has_happened('resolved2')) {
+                $reject->({ message => 'fail' });
+                $self->happen('resolved2');
+            }
+        };
     });
 
-    local $SIG{'USR1'} = sub {
-        (shift @resolves)->() if @resolves;
-    };
-
     my $pid = fork or do {
-        while (shift @resolves) {
-            kill 'USR1', getppid();
-            Time::HiRes::sleep(0.1);
-        }
+        $self->happen('ready2');
+
+        $self->wait_until('resolved2');
+
+        $self->happen('ready1');
 
         exit;
     };
 
-    # This failed once on Travis, but I couldn’t reproduce it …
+    my $race = Promise::ES6->race([$p1, $p2]);
+
     is_deeply exception {
-        diag $self->await( Promise::ES6->race([$p1, $p2]) )
+        diag $self->await( $race, \@resolves )
     }, { message => 'fail' };
 
-    kill 'KILL', $pid;
     waitpid $pid, 0;
 }
 
-__PACKAGE__->runtests;
+__PACKAGE__->new()->runtests;

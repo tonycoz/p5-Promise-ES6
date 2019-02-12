@@ -43,19 +43,44 @@ sub all_async : Tests {
         ($resolve2) = @_;
     });
 
-    local $SIG{'USR1'} = sub { $resolve1->(1) };
-    local $SIG{'USR2'} = sub { $resolve2->(2) };
+    my ($happen1, $happen2);
 
-    local $SIG{'CHLD'} = 'IGNORE';
-    fork or do {
-        kill 'USR2', getppid();
-        Time::HiRes::sleep(0.1);
-        kill 'USR1', getppid();
+    my @checks = (
+        sub {
+            if ( $self->has_happened('one') && !$self->has_happened('resolved1') ) {
+                $resolve1->(1);
+
+                $self->happen('resolved1');
+
+                return 1;
+            }
+        },
+        sub {
+            if ( $self->has_happened('two') && !$self->has_happened('resolved2') ) {
+                $resolve2->(2);
+
+                $self->happen('resolved2');
+
+                return 1;
+            }
+        },
+    );
+
+    my $pid = fork or do {
+        $self->happen('two');
+        $self->wait_until('resolved2');
+
+        $self->happen('one');
+        $self->wait_until('resolved1');
+
         exit;
     };
 
     my $all = Promise::ES6->all([$p1, $p2, 3]);
-    is_deeply( $self->await($all), [1,2,3] );
+
+    is_deeply( $self->await($all, \@checks), [1,2,3] );
+
+    waitpid $pid, 0;
 }
 
 sub all_values : Tests {
@@ -105,4 +130,4 @@ sub all_exception : Tests {
     );
 }
 
-__PACKAGE__->runtests;
+__PACKAGE__->new()->runtests;
