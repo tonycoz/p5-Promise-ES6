@@ -4,7 +4,9 @@ use warnings;
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
-use parent qw(PromiseTest);
+use PromiseTest;
+
+use parent qw(Test::Class);
 
 use Time::HiRes;
 
@@ -23,7 +25,7 @@ sub reject_catch : Tests {
         my ($reason) = @_;
         return $reason;
     });
-    is $self->await($p), 'oh my god!';
+    is PromiseTest::await($p), 'oh my god!';
 }
 
 sub then_reject_catch : Tests {
@@ -42,36 +44,7 @@ sub then_reject_catch : Tests {
         my ($reason) = @_;
         return $reason;
     });
-    is_deeply $self->await($p), { message => 'oh my god', value => 123 };
-}
-
-sub asyncreject_catch : Tests {
-    my ($self) = @_;
-
-    my @checkers;
-
-    my $p = Promise::ES6->new(sub {
-        (undef, my $reject) = @_;
-
-        push @checkers, sub {
-            if ($self->has_happened('thing')) {
-                $reject->('oh my god!');
-            }
-        };
-    })->catch(sub {
-        my ($reason) = @_;
-        return $reason;
-    });
-
-    my $pid = fork or do {
-        Time::HiRes::sleep(0.1);
-        $self->happen('thing');
-        exit;
-    };
-
-    is $self->await($p, \@checkers), 'oh my god!';
-
-    waitpid $pid, 0;
+    is_deeply PromiseTest::await($p), { message => 'oh my god', value => 123 };
 }
 
 sub exception_catch : Tests {
@@ -82,7 +55,7 @@ sub exception_catch : Tests {
         die { message => 'oh my god!!' };
     });
     is_deeply exception {
-        $self->await($p);
+        PromiseTest::await($p);
     }, { message => 'oh my god!!' };
 }
 
@@ -96,7 +69,7 @@ sub then_exception_await : Tests {
         my ($value) = @_;
         die { message => $value };
     });
-    is_deeply exception { $self->await($p) }, { message => 123 };
+    is_deeply exception { PromiseTest::await($p) }, { message => 123 };
 }
 
 sub exception_then_await : Tests {
@@ -112,7 +85,7 @@ sub exception_then_await : Tests {
         my ($reason) = @_;
         return { reason => $reason };
     });
-    is_deeply $self->await($p), { reason => { message => 'oh my god!!!' } };
+    is_deeply PromiseTest::await($p), { reason => { message => 'oh my god!!!' } };
 }
 
 sub exception_catch_then_await : Tests {
@@ -128,7 +101,7 @@ sub exception_catch_then_await : Tests {
         my ($value) = @_;
         return $value;
     });
-    is_deeply $self->await($p), { recover => 1, reason => { message => 'oh my god!!!' } };
+    is_deeply PromiseTest::await($p), { recover => 1, reason => { message => 'oh my god!!!' } };
 }
 
 __PACKAGE__->new()->runtests;

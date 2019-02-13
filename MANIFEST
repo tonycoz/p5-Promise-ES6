@@ -8,8 +8,10 @@ README.md
 lib/Promise/ES6.pm
 t/00_compile.t
 t/all.t
+t/all_async.t
 t/await.t
 t/catch.t
+t/lib/Eventer.pm
 t/lib/PromiseTest.pm
 t/multi_then.t
 t/race.t
