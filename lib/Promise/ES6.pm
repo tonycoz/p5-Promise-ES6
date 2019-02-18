@@ -116,7 +116,12 @@ sub _finish {
 
     if ($self->{"_on_$how"}) {
         if ( eval { $value = $self->{"_on_$how"}->($value); 1 } ) {
+
+            # This is here so that a rejection that’s caught
+            # after-the-fact will “reset”. That way further promises
+            # in the chain will warn() on rejection.
             delete $self->{'_warned_unhandled_reject'};
+
             $how = 'resolve';
         }
         else {

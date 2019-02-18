@@ -27,3 +27,4 @@ t/then.t
 t/then_catch.t
 t/then_success.t
 t/then_success_with_no_handler.t
+t/unhandled_rejection.t
