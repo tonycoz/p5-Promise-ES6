@@ -84,6 +84,7 @@ sub then {
     my $new = {
         _on_resolve => $on_resolve,
         _on_reject => $on_reject,
+        _warned_unhandled_reject => $self->{'_warned_unhandled_reject'},
     };
 
     bless $new, (ref $self);
@@ -115,6 +116,7 @@ sub _finish {
 
     if ($self->{"_on_$how"}) {
         if ( eval { $value = $self->{"_on_$how"}->($value); 1 } ) {
+            delete $self->{'_warned_unhandled_reject'};
             $how = 'resolve';
         }
         else {
@@ -142,6 +144,13 @@ sub _finish {
             $self->{'_finished_how'} = $repromise_how;
 
             $_->_finish($repromise_how, $repromise_value) for @{ $self->{'_dependents'} };
+
+            if ($repromise_how eq 'reject' && !@{ $self->{'_dependents'} }) {
+                $self->{'_warned_unhandled_reject'} ||= do {
+                    my $ref = ref $self;
+                    warn "$ref: Unhandled rejection: $repromise_value";
+                };
+            }
         }
     };
 
