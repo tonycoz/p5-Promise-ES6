@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03-TRIAL1';
 
 =encoding utf-8
 
