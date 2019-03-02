@@ -45,6 +45,8 @@ The interface is the same, except:
 =item * Promise resolutions and rejections accept exactly one argument,
 not a list. (This accords with the standard.)
 
+=item * Unhandled rejections are reported via C<warn()>.
+
 =item * A C<finally()> method is defined.
 
 =back
