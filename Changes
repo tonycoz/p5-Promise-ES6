@@ -1,6 +1,6 @@
 Revision history for Perl module Promise::ES6
 
-0.06
+0.06 Thu 12 Sep 2019
 - Issue #2: Make all() resolve when given an empty array reference.
 
 0.05 Wed 31 Jul 2019
