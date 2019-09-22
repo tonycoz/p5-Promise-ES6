@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.08_01';
+our $VERSION = '0.08';
 
 use constant {
 
@@ -133,6 +133,12 @@ CPAN contains a number of other modules that implement promises.
 Promise::ES6’s distinguishing features are simplicity and lightness.
 By design, it implements B<just> the standard Promise API and doesn’t
 assume you use, e.g., L<AnyEvent>.
+
+=head1 LICENSE & COPYRIGHT
+
+Copyright 2019 Gasper Software Consulting.
+
+This library is licensed under the same terms as Perl itself.
 
 =cut
 

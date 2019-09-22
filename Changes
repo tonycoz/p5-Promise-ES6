@@ -1,6 +1,6 @@
 Revision history for Perl module Promise::ES6
 
-0.08
+0.08 Sun 22 Sep 2019
 - Fix memory leaks in pre-5.18 perls, and proactively delete internal
   references.
 - Update documentation about memory leaks.

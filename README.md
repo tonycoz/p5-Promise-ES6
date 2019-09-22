@@ -99,3 +99,9 @@ CPAN contains a number of other modules that implement promises.
 Promise::ES6’s distinguishing features are simplicity and lightness.
 By design, it implements **just** the standard Promise API and doesn’t
 assume you use, e.g., [AnyEvent](https://metacpan.org/pod/AnyEvent).
+
+# LICENSE & COPYRIGHT
+
+Copyright 2019 Gasper Software Consulting.
+
+This library is licensed under the same terms as Perl itself.
