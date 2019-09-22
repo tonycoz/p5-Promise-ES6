@@ -211,6 +211,8 @@ sub _propagate_if_needed {
 
             # It may not be necessary to empty out @$children_ar, but
             # let’s do so anyway so Perl will delete references ASAP.
+            # It’s safe to do so because from here on $value_sr is
+            # no longer a pending value.
             for my $subpromise (splice @$children_ar) {
                 $subpromise->_finish($value_sr);
             }
@@ -233,7 +235,7 @@ sub then {
         _value_sr => $value_sr,
         _children => [],
 
-        _when_parent_completes => [ $on_resolve, $on_reject ],
+        _on_finish => [ $on_resolve, $on_reject ],
 
         _detect_leak => $DETECT_MEMORY_LEAKS,
     };
@@ -269,7 +271,13 @@ sub _finish {
 
     local $@;
 
-    my $callback = delete $self->{'_when_parent_completes'};
+    # A promise that new() created won’t have on-finish callbacks,
+    # but a promise that came from then/catch/finally will.
+    # It’s a good idea to delete _on_finish in order to trigger garbage
+    # collection as soon and as reliably as possible. It’s safe to do so
+    # because _finish() is only called once.
+    my $callback = delete $self->{'_on_finish'};
+
     $callback &&= $callback->[ $value_sr->isa( _REJECTION_CLASS() ) ? 1 : 0 ];
 
     # Only needed when catching, but the check would be more expensive
