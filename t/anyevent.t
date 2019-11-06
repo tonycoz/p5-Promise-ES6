@@ -14,7 +14,7 @@ plan tests => $TEST_COUNT;
 SKIP: {
     eval { require AnyEvent; 1 } or skip "AnyEvent isn’t available: $@", $TEST_COUNT;
 
-    require AnyEvent;
+    require Promise::ES6::AnyEvent;
 
     _test_normal();
     _test_die_in_constructor();
