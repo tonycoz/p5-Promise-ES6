@@ -6,9 +6,11 @@ MANIFEST
 Makefile.PL
 README.md
 lib/Promise/ES6.pm
+lib/Promise/ES6/AnyEvent.pm
 t/00_compile.t
 t/all.t
 t/all_async.t
+t/anyevent.t
 t/await.t
 t/await_then_with_async.t
 t/await_with_async.t
