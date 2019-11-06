@@ -7,14 +7,14 @@ use autodie;
 use Test::More;
 use Test::FailWarnings;
 
-use Promise::ES6::AnyEvent;
-
 my $TEST_COUNT = 4;
 
 plan tests => $TEST_COUNT;
 
 SKIP: {
     eval { require AnyEvent; 1 } or skip "AnyEvent isn’t available: $@", $TEST_COUNT;
+
+    require AnyEvent;
 
     _test_normal();
     _test_die_in_constructor();
