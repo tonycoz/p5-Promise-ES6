@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.09_03';
+our $VERSION = '0.09_04';
 
 use constant {
 
@@ -113,8 +113,31 @@ A key advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
 If you want a Promises/A+-compliant implementation, look at
-L<Promise::ES6::AnyEvent> or one of the alternatives that that module’s
-documentation suggests.
+L<Promise::ES6::IOAsync>, L<Promise::ES6::AnyEvent>, or one of the alternatives
+that that module’s documentation suggests.
+
+=head1 CANCELLATION
+
+Promises have never provided a standardized solution for cancellation—i.e.,
+aborting an in-process operation. So, if you need this functionality, you’ll
+have to implement it yourself. Two ways of doing this are:
+
+=over
+
+=item * Subclass Promise::ES6 and provide cancellation logic in your
+subclass. See L<DNS::Unbound::AsyncQuery>’s implementation for an
+example of this.
+
+=item * Implement the cancellation on the object that creates your promises.
+This is probably the more straightforward approach but requires that there
+be some object or ID besides the promise that uniquely identifies the action
+to be canceled. See L<Net::Curl::Promiser> for an example of this approach.
+
+=back
+
+You’ll need to decide if it makes more sense for your application to leave
+a canceled query in the “pending” state or to resolve or reject it.
+All things being equal, I feel the first approach is the most intuitive.
 
 =head1 MEMORY LEAKS
 

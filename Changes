@@ -1,8 +1,10 @@
 Revision history for Perl module Promise::ES6
 
 0.09
-- Update documentation with discussion of synchronous operation.
-- Add Promise::ES6::AnyEvent to implement Promises/A+ support.
+- Update documentation with discussions of synchronous operation and
+  cancellation.
+- Add Promise::ES6::AnyEvent and Promise::ES6::IOAsync to implement
+  Promises/A+ support. (EXPERIMENTAL)
 
 0.08 Sun 22 Sep 2019
 - Fix memory leaks in pre-5.18 perls, and proactively delete internal

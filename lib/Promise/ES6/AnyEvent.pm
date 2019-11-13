@@ -3,7 +3,7 @@ package Promise::ES6::AnyEvent;
 use strict;
 use warnings;
 
-use parent qw(Promise::ES6);
+use parent qw(Promise::ES6::EventLoopBase);
 
 =encoding utf-8
 
@@ -18,10 +18,20 @@ implement full Promises/A+ compliance. Specifically, this class defers
 execution of resolve and reject callbacks to the end of the current event
 loop iteration.
 
+=head1 STATUS
+
+This module is still in the “proof-of-concept” phase. There may be areas
+of Promises/A+ nonconformance that haven’t surfaced yet. Please
+L<file a bug report|https://github.com/FGasper/p5-Promise-ES6/issues>
+if you find any problems.
+
 =head1 SEE ALSO
 
-L<Promises>, L<AnyEvent::Promises>, and L<AnyEvent::XSPromises> all provide
-functionality similar to this class’s.
+This distribution includes L<Promise::ES6::IOAsync> for those who
+prefer L<IO::Async>.
+
+CPAN’s L<Promises>, L<AnyEvent::Promises>, and L<AnyEvent::XSPromises>
+all provide functionality similar to this class’s.
 
 =cut
 
@@ -31,28 +41,10 @@ use AnyEvent ();
 
 #----------------------------------------------------------------------
 
-sub new {
-    my ($class, $cr) = @_;
+sub _postpone {
 
-    return $class->SUPER::new( sub {
-        my ($res, $rej) = @_;
-
-        local $@;
-
-        my $ok = eval {
-            $cr->(
-                sub { AnyEvent::postpone( sub { $res->(@_) } ) },
-                sub { AnyEvent::postpone( sub { $rej->(@_) } ) },
-            );
-
-            1;
-        };
-
-        if (!$ok) {
-            my $err = $@;
-            AnyEvent::postpone( sub { $rej->($err) } );
-        }
-    } );
+    # postpone()’s prototype needlessly rejects a plain scalar.
+    return &AnyEvent::postpone( $_[1] );
 }
 
 1;

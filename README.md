@@ -89,6 +89,24 @@ If you want a Promises/A+-compliant implementation, look at
 [Promise::ES6::AnyEvent](https://metacpan.org/pod/Promise::ES6::AnyEvent) or one of the alternatives that that module’s
 documentation suggests.
 
+# CANCELLATION
+
+Promises have never provided a standardized solution for cancellation—i.e.,
+aborting an in-process operation. So, if you need this functionality, you’ll
+have to implement it yourself. Two ways of doing this are:
+
+- Subclass Promise::ES6 and provide cancellation logic in your
+subclass. See [DNS::Unbound::AsyncQuery](https://metacpan.org/pod/DNS::Unbound::AsyncQuery)’s implementation for an
+example of this.
+- Implement the cancellation on the object that creates your promises.
+This is probably the more straightforward approach but requires that there
+be some object or ID besides the promise that uniquely identifies the action
+to be canceled. See [Net::Curl::Promiser](https://metacpan.org/pod/Net::Curl::Promiser) for an example of this approach.
+
+You’ll need to decide if it makes more sense for your application to leave
+a canceled query in the “pending” state or to resolve or reject it.
+All things being equal, I feel the first approach is the most intuitive.
+
 # MEMORY LEAKS
 
 It’s easy to create inadvertent memory leaks using promises in Perl.
