@@ -1,6 +1,6 @@
 Revision history for Perl module Promise::ES6
 
-0.09
+0.09 Thu 14 November 2019
 - Update documentation with discussions of synchronous operation and
   cancellation.
 - Add Promise::ES6::AnyEvent and Promise::ES6::IOAsync to implement
