@@ -30,7 +30,7 @@ BEGIN {
     *Promise::ES6::DESTROY = sub {
         my $warn_gd = ($$ == $MASTER_PID);
 
-        $warn_gd &&= $has_devel_gd ? Devel::GlobalDestruction::in_global_destruction() : ('DESTRUCT' eq ${^GLOBAL_PHASE});
+        $warn_gd &&= $has_devel_gd ? Devel::GlobalDestruction::in_global_destruction() : (${^GLOBAL_PHASE} && ('DESTRUCT' eq ${^GLOBAL_PHASE}));
 
         if ($warn_gd) {
             print STDERR "XXX XXX XXX --- PID $$: DESTROYing Promise::ES6 at DESTRUCT time!$/";

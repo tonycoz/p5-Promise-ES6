@@ -86,8 +86,8 @@ A key advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
 If you want a Promises/A+-compliant implementation, look at
-[Promise::ES6::AnyEvent](https://metacpan.org/pod/Promise::ES6::AnyEvent) or one of the alternatives that that module’s
-documentation suggests.
+[Promise::ES6::IOAsync](https://metacpan.org/pod/Promise::ES6::IOAsync), [Promise::ES6::AnyEvent](https://metacpan.org/pod/Promise::ES6::AnyEvent), or one of the alternatives
+that that module’s documentation suggests.
 
 # CANCELLATION
 
