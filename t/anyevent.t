@@ -7,7 +7,7 @@ use autodie;
 use Test::More;
 use Test::FailWarnings -allow_deps => 1;
 
-my $TEST_COUNT = 4;
+my $TEST_COUNT = 5;
 
 plan tests => $TEST_COUNT;
 
@@ -20,6 +20,7 @@ SKIP: {
     _test_die_in_constructor();
     _test_resolve();
     _test_reject();
+    _test_die_in_then();
 }
 
 sub _test_normal {
@@ -33,7 +34,7 @@ sub _test_normal {
 
     push @things, 'c';
 
-    $promise->then( sub { push @things, 'd' } );
+    $promise->then( sub { push @things, shift() } );
 
     push @things, 'e';
 
@@ -43,7 +44,7 @@ sub _test_normal {
 
     is(
         "@things",
-        'a b c e d f',
+        'a b c e 123 f',
         'then() callback invoked asynchronously',
     );
 }
@@ -77,7 +78,7 @@ sub _test_reject {
 
     push @things, 'c';
 
-    $promise->catch( sub { push @things, 'd' } );
+    $promise->catch( sub { push @things, shift } );
 
     push @things, 'e';
 
@@ -87,7 +88,7 @@ sub _test_reject {
 
     is(
         "@things",
-        'c e d f',
+        'c e 123 f',
         'catch() callback invoked asynchronously',
     );
 }
@@ -97,13 +98,13 @@ sub _test_die_in_constructor {
 
     my $promise = Promise::ES6::AnyEvent->new( sub {
         push @things, 'a';
-        die 123;
+        die "123\n";
         push @things, 'b';
     } );
 
     push @things, 'c';
 
-    $promise->catch( sub { push @things, 'd' } );
+    $promise->catch( sub { push @things, shift } );
 
     push @things, 'e';
 
@@ -113,7 +114,31 @@ sub _test_die_in_constructor {
 
     is(
         "@things",
-        'a c e d f',
+        "a c e 123\n f",
+        'catch() callback invoked asynchronously',
+    );
+}
+
+sub _test_die_in_then {
+    my @things;
+
+    my $promise = Promise::ES6::AnyEvent->resolve(123)->then( sub {
+        die "123\n";
+    } );
+
+    push @things, 'c';
+
+    $promise->catch( sub { push @things, shift } );
+
+    push @things, 'e';
+
+    _resolve($promise);
+
+    push @things, 'f';
+
+    is(
+        "@things",
+        "c e 123\n f",
         'catch() callback invoked asynchronously',
     );
 }

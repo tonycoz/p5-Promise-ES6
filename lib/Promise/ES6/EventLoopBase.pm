@@ -15,8 +15,14 @@ sub new {
 
         my $ok = eval {
             $cr->(
-                sub { $class->_postpone( sub { $res->(@_) } ) },
-                sub { $class->_postpone( sub { $rej->(@_) } ) },
+                sub {
+                    my ($arg) = @_;
+                    $class->_postpone( sub { $res->($arg) } );
+                },
+                sub {
+                    my ($arg) = @_;
+                    $class->_postpone( sub { $rej->($arg) } );
+                },
             );
 
             1;
