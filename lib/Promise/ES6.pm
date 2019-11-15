@@ -257,14 +257,15 @@ sub new {
 sub _propagate_if_needed {
     my ($value_sr, $children_ar) = @_;
 
-    my $propagate_cr;
-    $propagate_cr = sub {
+use feature 'current_sub';
+    sub {
         my ($repromise_value_sr) = @_;
 
         if ( _is_promise($$repromise_value_sr) ) {
+            my $current_sub = __SUB__;
             my $in_reprom = $$repromise_value_sr->then(
-                sub { $propagate_cr->( bless \do {my $v = $_[0]}, _RESOLUTION_CLASS ) },
-                sub { $propagate_cr->( bless \do {my $v = $_[0]}, _REJECTION_CLASS ) },
+                sub { $current_sub->( bless \do {my $v = $_[0]}, _RESOLUTION_CLASS ) },
+                sub { $current_sub->( bless \do {my $v = $_[0]}, _REJECTION_CLASS ) },
             );
         }
         else {
@@ -279,9 +280,7 @@ sub _propagate_if_needed {
                 $subpromise->_finish($value_sr);
             }
         }
-    };
-
-    $propagate_cr->($value_sr);
+    }->($value_sr);
 
     return;
 }
@@ -474,6 +473,9 @@ sub DESTROY {
     return if $$ != $_[0]{'_pid'};
 
     if ($_[0]{'_detect_leak'} && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT') {
+use Data::Dumper;
+$Data::Dumper::Deparse = 1;
+print STDERR Dumper $_[0];
         warn(
             ('=' x 70) . "\n"
             . 'XXXXXX - ' . ref($_[0]) . " survived until global destruction; memory leak likely!\n"
