@@ -3,11 +3,11 @@ package Promise::ES6;
 use strict;
 use warnings;
 
+our $VERSION = '0.11';
+
 use constant _has_current_sub => $^V ge v5.16.0;
 
 use if _has_current_sub(), feature => 'current_sub';
-
-our $VERSION = '0.11_01';
 
 use constant {
 
@@ -268,15 +268,21 @@ sub _propagate_if_needed {
 
         if ( _is_promise($$repromise_value_sr) ) {
 
+            # Accommodate Perl versions whose $@ handling is buggy
+            # by forgoing local():
+            my $old_err = $@;
+
             my $current_sub = do {
                 no strict 'subs';
 
                 # The eval here mimics the “current_sub” feature:
                 # a reference to the current subroutine
                 # without actually closing on that reference.
-                # This prevents memory leaks.
+                # This helps to prevent memory leaks.
                 _has_current_sub() ? __SUB__ : eval '$cb';
             };
+
+            $@ = $old_err;
 
             my $in_reprom = $$repromise_value_sr->then(
                 sub { $current_sub->( bless \do {my $v = $_[0]}, _RESOLUTION_CLASS ) },
