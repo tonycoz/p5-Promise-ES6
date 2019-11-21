@@ -15,8 +15,6 @@ my ($LOOP, $LOOP_GUARD);
 
 __PACKAGE__->run();
 
-undef $LOOP
-
 use constant _BACKEND => 'IOAsync';
 
 use Promise::ES6::IOAsync;
