@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.12_02';
+our $VERSION = '0.12';
 
 use constant _has_current_sub => $^V ge v5.16.0;
 

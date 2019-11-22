@@ -10,7 +10,6 @@ lib/Promise/ES6/AnyEvent.pm
 lib/Promise/ES6/EventLoopBase.pm
 lib/Promise/ES6/IOAsync.pm
 lib/Promise/ES6/Mojo.pm
-t/00_compile.t
 t/all.t
 t/all_async.t
 t/anyevent.t
