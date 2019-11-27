@@ -1,5 +1,9 @@
 Revision history for Perl module Promise::ES6
 
+0.13 Tue 26 November 2019
+- Provide Future conversion logic.
+- Flesh out Mojo.pm documentation.
+
 0.12 Thu 21 November 2019
 - Fix event-loop logic to run ->then() asynchronously.
 - Remove left-in Data::Dumper.
