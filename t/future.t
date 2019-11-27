@@ -18,7 +18,7 @@ is(
 );
 
 SKIP: {
-    eval { require Future; 1 } or skip "Future isn’t available: $@";
+    eval { require Future; die 123; 1 } or skip "Future isn’t available: $@";
 
     my $goodf = Future->done(123);
 
