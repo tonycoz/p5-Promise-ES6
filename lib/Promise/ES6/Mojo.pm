@@ -14,13 +14,17 @@ Promise::ES6::Mojo - L<Promises/A+-compliant|https://github.com/promises-aplus/p
 This module exposes the same functionality as L<Promise::ES6::AnyEvent>
 but for L<Mojo::IOLoop> rather than L<AnyEvent>.
 
+Its interface is almost compatible with the ES6-derived portions of
+L<Mojo::Promise>, but note that Mojo::Promise’s C<all()> and
+C<race()> methods accept a list of promises rather than an array reference.
+
 =cut
 
 #----------------------------------------------------------------------
 
 use parent qw( Promise::ES6::EventLoopBase );
 
-use Mojo::IOLoop ();
+use Mojo::IOLoop 4.85 ();
 
 #----------------------------------------------------------------------
 

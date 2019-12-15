@@ -1,5 +1,9 @@
 Revision history for Perl module Promise::ES6
 
+0.15
+- Make Mojo subclass require a sufficiently modern Mojo::IOLoop.
+- Update Future.pm docs a bit.
+
 0.14 Wed 27 Nov 2019
 - Fix test by requiring a reasonably recent Test::More.
 
