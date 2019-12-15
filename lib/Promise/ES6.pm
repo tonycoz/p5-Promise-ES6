@@ -211,6 +211,15 @@ our $DETECT_MEMORY_LEAKS;
 # "$value_sr" => $value_sr
 our %_UNHANDLED_REJECTIONS;
 
+use constant {
+    _PID_IDX => 0,
+    _CHILDREN_IDX => 1,
+    _VALUE_SR_IDX => 2,
+    _DETECT_LEAK_IDX => 3,
+    _ON_RESOLVE_IDX => 4,
+    _ON_REJECT_IDX => 5,
+};
+
 sub new {
     my ($class, $cr) = @_;
 
@@ -221,12 +230,12 @@ sub new {
 
     my @children;
 
-    my $self = bless {
-        _pid => $$,
-        _children => \@children,
-        _value_sr => $value_sr,
-        _detect_leak => $DETECT_MEMORY_LEAKS,
-    }, $class;
+    my $self = bless [
+        $$,
+        \@children,
+        $value_sr,
+        $DETECT_MEMORY_LEAKS,
+    ], $class;
 
     my $suppress_unhandled_rejection_warning = 1;
 
@@ -320,24 +329,20 @@ sub then {
 
     my $value_sr = bless( \do{ my $v }, _PENDING_CLASS() );
 
-    my $new = {
-        _pid => $$,
-
-        _value_sr => $value_sr,
-        _children => [],
-
-        _on_finish => [ $on_resolve, $on_reject ],
-
-        _detect_leak => $DETECT_MEMORY_LEAKS,
-    };
-
-    bless $new, (ref $self);
+    my $new = bless [
+        $$,
+        [],
+        $value_sr,
+        $DETECT_MEMORY_LEAKS,
+        $on_resolve,
+        $on_reject,
+    ], ref($self);
 
     if ($self->_is_completed()) {
-        $new->_finish( $self->{'_value_sr'} );
+        $new->_finish( $self->[ _VALUE_SR_IDX ] );
     }
     else {
-        push @{ $self->{'_children'} }, $new;
+        push @{ $self->[ _CHILDREN_IDX ] }, $new;
     }
 
     return $new;
@@ -352,7 +357,7 @@ sub finally {
 }
 
 sub _is_completed {
-    return !$_[0]{'_value_sr'}->isa( _PENDING_CLASS() );
+    return !$_[0][ _VALUE_SR_IDX ]->isa( _PENDING_CLASS() );
 }
 
 sub _finish {
@@ -367,9 +372,9 @@ sub _finish {
     # It’s a good idea to delete _on_finish in order to trigger garbage
     # collection as soon and as reliably as possible. It’s safe to do so
     # because _finish() is only called once.
-    my $callback = delete $self->{'_on_finish'};
+    my $callback = $self->[ $value_sr->isa( _REJECTION_CLASS() ) ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
 
-    $callback &&= $callback->[ $value_sr->isa( _REJECTION_CLASS() ) ? 1 : 0 ];
+    @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
 
     # Only needed when catching, but the check would be more expensive
     # than just always deleting. So, hey.
@@ -380,27 +385,27 @@ sub _finish {
 
         if ( eval { $new_value = $callback->($$value_sr); 1 } ) {
             # bless $self->{'_value_sr'}, _RESOLUTION_CLASS();
-            bless $self->{'_value_sr'}, _RESOLUTION_CLASS() if !_is_promise($new_value);
+            bless $self->[ _VALUE_SR_IDX ], _RESOLUTION_CLASS() if !_is_promise($new_value);
         }
         else {
-            bless $self->{'_value_sr'}, _REJECTION_CLASS();
-            $_UNHANDLED_REJECTIONS{ $self->{'_value_sr'} } = $self->{'_value_sr'};
+            bless $self->[ _VALUE_SR_IDX ], _REJECTION_CLASS();
+            $_UNHANDLED_REJECTIONS{ $self->[ _VALUE_SR_IDX ] } = $self->[ _VALUE_SR_IDX ];
             $new_value = $@;
         }
 
-        ${ $self->{'_value_sr'} } = $new_value;
+        ${ $self->[ _VALUE_SR_IDX ] } = $new_value;
     }
     else {
-        bless $self->{'_value_sr'}, ref($value_sr);
-        ${ $self->{'_value_sr'} } = $$value_sr;
+        bless $self->[ _VALUE_SR_IDX ], ref($value_sr);
+        ${ $self->[ _VALUE_SR_IDX ] } = $$value_sr;
 
         if ($value_sr->isa( _REJECTION_CLASS())) {
-            $_UNHANDLED_REJECTIONS{ $self->{'_value_sr'} } = $self->{'_value_sr'};
+            $_UNHANDLED_REJECTIONS{ $self->[ _VALUE_SR_IDX ] } = $self->[ _VALUE_SR_IDX ];
         }
     }
 
     _propagate_if_needed(
-        @{$self}{ qw( _value_sr  _children ) },
+        @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX ],
     );
 
     return;
@@ -430,7 +435,7 @@ sub all {
     my ($class, $iterable) = @_;
     my @promises = map { _is_promise($_) ? $_ : $class->resolve($_) } @$iterable;
 
-    my @value_srs = map { $_->{_value_sr} } @promises;
+    my @value_srs = map { $_->[ _VALUE_SR_IDX ] } @promises;
 
     return $class->new(sub {
         my ($resolve, $reject) = @_;
@@ -500,9 +505,9 @@ sub _is_promise {
 }
 
 sub DESTROY {
-    return if $$ != $_[0]{'_pid'};
+    return if $$ != $_[0][ _PID_IDX ];
 
-    if ($_[0]{'_detect_leak'} && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT') {
+    if ($_[0][ _DETECT_LEAK_IDX ] && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT') {
         warn(
             ('=' x 70) . "\n"
             . 'XXXXXX - ' . ref($_[0]) . " survived until global destruction; memory leak likely!\n"
@@ -510,8 +515,8 @@ sub DESTROY {
         );
     }
 
-    if ($_[0]{'_value_sr'}) {
-        if (my $value_sr = delete $_UNHANDLED_REJECTIONS{ $_[0]{'_value_sr'} }) {
+    if (my $promise_value_sr = $_[0][ _VALUE_SR_IDX ]) {
+        if (my $value_sr = delete $_UNHANDLED_REJECTIONS{ $promise_value_sr }) {
             my $ref = ref $_[0];
             warn "$ref: Unhandled rejection: $$value_sr";
         }

@@ -18,13 +18,15 @@ Its interface is almost compatible with the ES6-derived portions of
 L<Mojo::Promise>, but note that Mojo::Promise’s C<all()> and
 C<race()> methods accept a list of promises rather than an array reference.
 
+B<NOTE:> This module requires Mojolicious version 4.85 or higher.
+
 =cut
 
 #----------------------------------------------------------------------
 
 use parent qw( Promise::ES6::EventLoopBase );
 
-use Mojo::IOLoop 4.85 ();
+use Mojo::IOLoop ();
 
 #----------------------------------------------------------------------
 
