@@ -20,6 +20,7 @@ t/await_with_async.t
 t/catch.t
 t/catch_asyncreject.t
 t/future.t
+t/global_destruction.t
 t/ioasync.t
 t/lib/EventTest.pm
 t/lib/Eventer.pm
