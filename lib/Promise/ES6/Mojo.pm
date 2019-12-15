@@ -28,6 +28,12 @@ use parent qw( Promise::ES6::EventLoopBase );
 
 use Mojo::IOLoop ();
 
+BEGIN {
+    if (!Mojo::IOLoop->can('next_tick')) {
+        die( __PACKAGE__ . " requires Mojo::IOLoop::next_tick(). Upgrade to a newer Mojolicious version.$/" );
+    }
+}
+
 #----------------------------------------------------------------------
 
 sub _postpone {
