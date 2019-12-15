@@ -131,12 +131,13 @@ have to implement it yourself. Two ways of doing this are:
 
 =over
 
-=item * Subclass Promise::ES6 and provide cancellation logic in your
+=item * Subclass Promise::ES6 and provide cancellation logic in that
 subclass. See L<DNS::Unbound::AsyncQuery>’s implementation for an
 example of this.
 
-=item * Implement the cancellation on the object that creates your promises.
-This is probably the more straightforward approach but requires that there
+=item * Implement the cancellation on a request object that your
+“promise-creator” also consumes. This is probably the more straightforward
+approach but requires that there
 be some object or ID besides the promise that uniquely identifies the action
 to be canceled. See L<Net::Curl::Promiser> for an example of this approach.
 

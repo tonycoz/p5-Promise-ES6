@@ -98,11 +98,12 @@ Promises have never provided a standardized solution for cancellation—i.e.,
 aborting an in-process operation. So, if you need this functionality, you’ll
 have to implement it yourself. Two ways of doing this are:
 
-- Subclass Promise::ES6 and provide cancellation logic in your
+- Subclass Promise::ES6 and provide cancellation logic in that
 subclass. See [DNS::Unbound::AsyncQuery](https://metacpan.org/pod/DNS::Unbound::AsyncQuery)’s implementation for an
 example of this.
-- Implement the cancellation on the object that creates your promises.
-This is probably the more straightforward approach but requires that there
+- Implement the cancellation on a request object that your
+“promise-creator” also consumes. This is probably the more straightforward
+approach but requires that there
 be some object or ID besides the promise that uniquely identifies the action
 to be canceled. See [Net::Curl::Promiser](https://metacpan.org/pod/Net::Curl::Promiser) for an example of this approach.
 
