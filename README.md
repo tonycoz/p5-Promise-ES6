@@ -122,8 +122,23 @@ Here are a few “pointers” (heh) to bear in mind:
 process’s global destruction, a warning is triggered.
 - If your application needs recursive promises (e.g., to poll
 iteratively for completion of a task), the `current_sub` feature (i.e.,
-`__SUB__`) may help you avoid memory leaks. (See this module’s source code
-for a substitute that works with pre-5.16 perls.)
+`__SUB__`) may help you avoid memory leaks. In Perl versions that don’t
+support this feature you can imitate it thus:
+
+        use constant _has_current_sub => $^V ge v5.16.0;
+
+        use if _has_current_sub(), feature => 'current_sub';
+
+        my $cb;
+        $cb = sub {
+            my $current_sub = do {
+                no strict 'subs';
+                _has_current_sub() ? __SUB__ : eval '$cb';
+            };
+        }
+
+    Of course, it’s better if you can avoid doing that. :)
+
 - Garbage collection before Perl 5.18 seems to have been buggy.
 If you work with such versions and end up chasing leaks,
 try manually deleting as many references/closures as possible. See
