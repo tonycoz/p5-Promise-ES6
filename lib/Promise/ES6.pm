@@ -432,16 +432,26 @@ sub all {
         my ($resolve, $reject) = @_;
         my $unresolved_size = scalar(@promises);
 
+        my $settled;
+
         if ($unresolved_size) {
             for my $promise (@promises) {
                 my $new = $promise->then(
                     sub {
+                        return if $settled;
+
                         $unresolved_size--;
-                        if ($unresolved_size <= 0) {
-                            $resolve->([ map { $$_ } @value_srs ]);
-                        }
+                        return if $unresolved_size > 0;
+
+                        $settled = 1;
+                        $resolve->([ map { $$_ } @value_srs ]);
                     },
-                    $reject,
+                    sub {
+                        return if $settled;
+
+                        $settled = 1;
+                        $reject->(@_);
+                    },
                 );
             }
         }
