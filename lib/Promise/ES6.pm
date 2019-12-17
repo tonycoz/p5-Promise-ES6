@@ -299,7 +299,7 @@ sub _propagate_if_needed_repromise {
         # let’s do so anyway so Perl will delete references ASAP.
         # It’s safe to do so because from here on $value_sr is
         # no longer a pending value.
-        $_->_finish($value_sr) for splice @$children_ar;
+        $_->_settle($value_sr) for splice @$children_ar;
     }
 
     return;
@@ -330,7 +330,7 @@ sub then {
     ], ref($self);
 
     if ($self->_is_completed()) {
-        $new->_finish( $self->[ _VALUE_SR_IDX ] );
+        $new->_settle( $self->[ _VALUE_SR_IDX ] );
     }
     else {
         push @{ $self->[ _CHILDREN_IDX ] }, $new;
@@ -351,18 +351,16 @@ sub _is_completed {
     return !$_[0][ _VALUE_SR_IDX ]->isa( _PENDING_CLASS() );
 }
 
-sub _finish {
+sub _settle {
     my ($self, $value_sr) = @_;
 
-    die "$self already finished!" if $self->_is_completed();
+    die "$self already settled!" if $self->_is_completed();
 
-    local $@;
-
-    # A promise that new() created won’t have on-finish callbacks,
+    # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
-    # It’s a good idea to delete _on_finish in order to trigger garbage
+    # It’s a good idea to delete the callbacks in order to trigger garbage
     # collection as soon and as reliably as possible. It’s safe to do so
-    # because _finish() is only called once.
+    # because _settle() is only called once.
     my $callback = $self->[ $value_sr->isa( _REJECTION_CLASS() ) ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
 
     @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
@@ -374,14 +372,16 @@ sub _finish {
     if ($callback) {
         my ($new_value);
 
+        local $@;
+
         if ( eval { $new_value = $callback->($$value_sr); 1 } ) {
-            # bless $self->{'_value_sr'}, _RESOLUTION_CLASS();
             bless $self->[ _VALUE_SR_IDX ], _RESOLUTION_CLASS() if !_is_promise($new_value);
         }
         else {
+            $new_value = $@;
+
             bless $self->[ _VALUE_SR_IDX ], _REJECTION_CLASS();
             $_UNHANDLED_REJECTIONS{ $self->[ _VALUE_SR_IDX ] } = $self->[ _VALUE_SR_IDX ];
-            $new_value = $@;
         }
 
         ${ $self->[ _VALUE_SR_IDX ] } = $new_value;
