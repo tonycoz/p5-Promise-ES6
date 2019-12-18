@@ -312,7 +312,10 @@ sub _repromise {
 sub _propagate_if_needed_repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
-    return _repromise( $value_sr, $children_ar, $repromise_value_sr ) if _is_promise($$repromise_value_sr);
+    local $@;
+    if ( eval { $$repromise_value_sr->isa(__PACKAGE__) } ) {    # _is_promise
+        return _repromise( $value_sr, $children_ar, $repromise_value_sr );
+    }
 
     $$value_sr = $$repromise_value_sr;
     bless $value_sr, ref($repromise_value_sr);
@@ -408,7 +411,8 @@ sub _settle {
         }
     }
 
-    if ( _is_promise( ${ $self->[_VALUE_SR_IDX] } ) ) {
+    local $@;
+    if ( eval { ${ $self->[_VALUE_SR_IDX] }->isa(__PACKAGE__) } ) {    # _is_promise
         _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
     }
     elsif ( @{ $self->[_CHILDREN_IDX] } ) {
