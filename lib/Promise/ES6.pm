@@ -254,13 +254,17 @@ sub new {
     # depending on how $resolver and $rejector are used.
     my $resolver = sub {
         $$value_sr = $_[0];
-        bless $value_sr, _RESOLUTION_CLASS();
 
         if ( _is_promise($$value_sr) ) {
+            bless $value_sr, _RESOLUTION_CLASS();
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
-            _propagate_and_settle_children( $value_sr, \@children, $value_sr );
+            bless $value_sr, ref($value_sr);
+            $_->_settle($value_sr) for splice @children;
+        }
+        else {
+            bless $value_sr, _RESOLUTION_CLASS();
         }
     };
 
@@ -276,7 +280,8 @@ sub new {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
-            _propagate_and_settle_children( $value_sr, \@children, $value_sr );
+            bless $value_sr, ref($value_sr);
+            $_->_settle($value_sr) for splice @children;
         }
     };
 
