@@ -255,7 +255,7 @@ sub new {
     my $resolver = sub {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
-        _propagate_if_needed( $value_sr, \@children, $value_sr );
+        _propagate_if_needed( $value_sr, \@children );
     };
 
     my $rejecter = sub {
@@ -266,7 +266,7 @@ sub new {
             $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
         }
 
-        _propagate_if_needed( $value_sr, \@children, $value_sr );
+        _propagate_if_needed( $value_sr, \@children );
     };
 
     local $@;
@@ -282,32 +282,44 @@ sub new {
     return $self;
 }
 
-sub _propagate_if_needed {
+sub _propagate_if_needed_repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
     if ( _is_promise($$repromise_value_sr) ) {
         $$repromise_value_sr->then(
             sub {
-                _propagate_if_needed( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _RESOLUTION_CLASS );
+                _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _RESOLUTION_CLASS );
             },
             sub {
-                _propagate_if_needed( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _REJECTION_CLASS );
+                _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _REJECTION_CLASS );
             },
         );
         return;
     }
 
+    return _settle_children( $value_sr, $children_ar, $repromise_value_sr );
+}
+
+sub _settle_children {
+    my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
     $$value_sr = $$repromise_value_sr;
     bless $value_sr, ref($repromise_value_sr);
 
-    if (@$children_ar) {
+    # It may not be necessary to empty out @$children_ar, but
+    # let’s do so anyway so Perl will delete references ASAP.
+    # It’s safe to do so because from here on $value_sr is
+    # no longer a pending value.
+    $_->_settle($value_sr) for splice @$children_ar;
+    return;
+}
 
-        # It may not be necessary to empty out @$children_ar, but
-        # let’s do so anyway so Perl will delete references ASAP.
-        # It’s safe to do so because from here on $value_sr is
-        # no longer a pending value.
-        $_->_settle($value_sr) for splice @$children_ar;
+sub _propagate_if_needed {
+    my ( $value_sr, $children_ar ) = @_;
+
+    if ( @$children_ar || _is_promise($$value_sr) ) {
+        _propagate_if_needed_repromise( $value_sr, $children_ar, $value_sr );
     }
+
     return;
 }
 
@@ -394,7 +406,7 @@ sub _settle {
     }
 
     _propagate_if_needed(
-        @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ],
+        @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX ],
     );
 
     return;
