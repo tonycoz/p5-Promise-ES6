@@ -313,11 +313,6 @@ sub _propagate_if_needed_repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
     return _repromise( $value_sr, $children_ar, $repromise_value_sr ) if _is_promise($$repromise_value_sr);
-    return _propagate_and_settle_children( $value_sr, $children_ar, $repromise_value_sr );
-}
-
-sub _propagate_and_settle_children {
-    my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
     $$value_sr = $$repromise_value_sr;
     bless $value_sr, ref($repromise_value_sr);
@@ -327,6 +322,7 @@ sub _propagate_and_settle_children {
     # It’s safe to do so because from here on $value_sr is
     # no longer a pending value.
     $_->_settle($value_sr) for splice @$children_ar;
+
     return;
 }
 
@@ -416,7 +412,7 @@ sub _settle {
         _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
     }
     elsif ( @{ $self->[_CHILDREN_IDX] } ) {
-        _propagate_and_settle_children( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
+        $_->_settle( $self->[_VALUE_SR_IDX] ) for splice @{ $self->[_CHILDREN_IDX] };
     }
 
     return;
