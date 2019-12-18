@@ -261,7 +261,6 @@ sub new {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
-            bless $value_sr, ref($value_sr);
             $_->_settle($value_sr) for splice @children;
         }
         else {
@@ -282,7 +281,6 @@ sub new {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
-            bless $value_sr, ref($value_sr);
             $_->_settle($value_sr) for splice @children;
         }
     };
