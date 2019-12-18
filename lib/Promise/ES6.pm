@@ -256,7 +256,7 @@ sub new {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
 
-        if ( ref $$value_sr eq __PACKAGE__ ) {
+        if ( UNIVERSAL::isa( $$value_sr, __PACKAGE__ ) ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
@@ -272,7 +272,7 @@ sub new {
             $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
         }
 
-        if ( ref $$value_sr eq __PACKAGE__ ) {
+        if ( UNIVERSAL::isa( $$value_sr, __PACKAGE__ ) ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
@@ -310,7 +310,7 @@ sub _repromise {
 sub _propagate_if_needed_repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
-    if ( ref $$repromise_value_sr eq __PACKAGE__ ) {
+    if ( UNIVERSAL::isa( $$repromise_value_sr, __PACKAGE__ ) ) {
         return _repromise( $value_sr, $children_ar, $repromise_value_sr );
     }
 
@@ -388,7 +388,7 @@ sub _settle {
         local $@;
 
         if ( eval { $new_value = $callback->($$value_sr); 1 } ) {
-            bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS() if ref $new_value ne __PACKAGE__;
+            bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS() if !UNIVERSAL::isa( $new_value, __PACKAGE__ );
         }
         else {
             $new_value = $@;
@@ -408,7 +408,7 @@ sub _settle {
         }
     }
 
-    if ( ref ${ $self->[_VALUE_SR_IDX] } eq __PACKAGE__ ) {
+    if ( UNIVERSAL::isa( ${ $self->[_VALUE_SR_IDX] }, __PACKAGE__ ) ) {
         _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
     }
     elsif ( @{ $self->[_CHILDREN_IDX] } ) {
@@ -444,7 +444,7 @@ sub reject {
 
 sub all {
     my ( $class, $iterable ) = @_;
-    my @promises = map { ref $_ eq __PACKAGE__ ? $_ : $class->resolve($_) } @$iterable;
+    my @promises = map { UNIVERSAL::isa( $_, __PACKAGE__ ) ? $_ : $class->resolve($_) } @$iterable;
 
     my @value_srs = map { $_->[_VALUE_SR_IDX] } @promises;
 
@@ -485,7 +485,7 @@ sub all {
 
 sub race {
     my ( $class, $iterable ) = @_;
-    my @promises = map { ref $_ eq __PACKAGE__ ? $_ : $class->resolve($_) } @$iterable;
+    my @promises = map { UNIVERSAL::isa( $_, __PACKAGE__ ) ? $_ : $class->resolve($_) } @$iterable;
 
     my ( $resolve, $reject );
 
@@ -526,11 +526,6 @@ sub race {
 
     return $new;
 }
-
-# This is inlined for speed
-#sub _is_promise {
-#  ref $_[0] eq __PACKAGE__ ;
-#}
 
 sub DESTROY {
     return if $$ != $_[0][_PID_IDX];
