@@ -255,6 +255,7 @@ sub new {
     my $resolver = sub {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
+
         _propagate_if_needed( $value_sr, \@children );
     };
 
@@ -282,26 +283,30 @@ sub new {
     return $self;
 }
 
+sub _repromise {
+    my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
+    $$repromise_value_sr->then(
+        sub {
+            _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _RESOLUTION_CLASS );
+        },
+        sub {
+            _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _REJECTION_CLASS );
+        },
+    );
+    return;
+
+}
+
 sub _propagate_if_needed_repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
-    if ( _is_promise($$repromise_value_sr) ) {
-        $$repromise_value_sr->then(
-            sub {
-                _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _RESOLUTION_CLASS );
-            },
-            sub {
-                _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _REJECTION_CLASS );
-            },
-        );
-        return;
-    }
-
-    return _settle_children( $value_sr, $children_ar, $repromise_value_sr );
+    return _repromise( $value_sr, $children_ar, $repromise_value_sr ) if _is_promise($$repromise_value_sr);
+    return _propagate_and_settle_children( $value_sr, $children_ar, $repromise_value_sr );
 }
 
-sub _settle_children {
+sub _propagate_and_settle_children {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
+
     $$value_sr = $$repromise_value_sr;
     bless $value_sr, ref($repromise_value_sr);
 
@@ -316,8 +321,11 @@ sub _settle_children {
 sub _propagate_if_needed {
     my ( $value_sr, $children_ar ) = @_;
 
-    if ( @$children_ar || _is_promise($$value_sr) ) {
-        _propagate_if_needed_repromise( $value_sr, $children_ar, $value_sr );
+    if ( _is_promise($$value_sr) ) {
+        return _repromise( $value_sr, $children_ar, $value_sr );
+    }
+    elsif (@$children_ar) {
+        return _propagate_and_settle_children( $value_sr, $children_ar, $value_sr );
     }
 
     return;
