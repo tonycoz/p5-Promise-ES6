@@ -329,7 +329,7 @@ sub then {
         $on_reject,
     ], ref($self);
 
-    if ($self->_is_completed()) {
+    if (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]) {
         $new->_settle( $self->[ _VALUE_SR_IDX ] );
     }
     else {
@@ -347,14 +347,15 @@ sub finally {
     return $self->then( $todo_cr, $todo_cr );
 }
 
-sub _is_completed {
-    return !$_[0][ _VALUE_SR_IDX ]->isa( _PENDING_CLASS() );
-}
+# It’s gainfully faster to inline this:
+#sub _is_completed {
+#    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
+#}
 
 sub _settle {
     my ($self, $value_sr) = @_;
 
-    die "$self already settled!" if $self->_is_completed();
+    die "$self already settled!" if _PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ];
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
