@@ -256,8 +256,7 @@ sub new {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
 
-        local $@;
-        if ( eval { $$value_sr->isa(__PACKAGE__) } ) {    # _is_promise
+        if ( ref $$value_sr eq __PACKAGE__ ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
@@ -273,8 +272,7 @@ sub new {
             $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
         }
 
-        local $@;
-        if ( eval { $$value_sr->isa(__PACKAGE__) } ) {    # _is_promise
+        if ( ref $$value_sr eq __PACKAGE__ ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
@@ -312,8 +310,7 @@ sub _repromise {
 sub _propagate_if_needed_repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
 
-    local $@;
-    if ( eval { $$repromise_value_sr->isa(__PACKAGE__) } ) {    # _is_promise
+    if ( ref $$repromise_value_sr eq __PACKAGE__ ) {
         return _repromise( $value_sr, $children_ar, $repromise_value_sr );
     }
 
@@ -391,7 +388,7 @@ sub _settle {
         local $@;
 
         if ( eval { $new_value = $callback->($$value_sr); 1 } ) {
-            bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS() if !_is_promise($new_value);
+            bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS() if ref $new_value ne __PACKAGE__;
         }
         else {
             $new_value = $@;
@@ -411,8 +408,7 @@ sub _settle {
         }
     }
 
-    local $@;
-    if ( eval { ${ $self->[_VALUE_SR_IDX] }->isa(__PACKAGE__) } ) {    # _is_promise
+    if ( ref ${ $self->[_VALUE_SR_IDX] } eq __PACKAGE__ ) {
         _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
     }
     elsif ( @{ $self->[_CHILDREN_IDX] } ) {
@@ -448,7 +444,7 @@ sub reject {
 
 sub all {
     my ( $class, $iterable ) = @_;
-    my @promises = map { _is_promise($_) ? $_ : $class->resolve($_) } @$iterable;
+    my @promises = map { ref $_ eq __PACKAGE__ ? $_ : $class->resolve($_) } @$iterable;
 
     my @value_srs = map { $_->[_VALUE_SR_IDX] } @promises;
 
@@ -489,7 +485,7 @@ sub all {
 
 sub race {
     my ( $class, $iterable ) = @_;
-    my @promises = map { _is_promise($_) ? $_ : $class->resolve($_) } @$iterable;
+    my @promises = map { ref $_ eq __PACKAGE__ ? $_ : $class->resolve($_) } @$iterable;
 
     my ( $resolve, $reject );
 
@@ -531,10 +527,10 @@ sub race {
     return $new;
 }
 
-sub _is_promise {
-    local $@;
-    return eval { $_[0]->isa(__PACKAGE__) };
-}
+# This is inlined for speed
+#sub _is_promise {
+#  ref $_[0] eq __PACKAGE__ ;
+#}
 
 sub DESTROY {
     return if $$ != $_[0][_PID_IDX];
