@@ -256,7 +256,12 @@ sub new {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
 
-        _propagate_if_needed( $value_sr, \@children );
+        if ( _is_promise($$value_sr) ) {
+            _repromise( $value_sr, \@children, $value_sr );
+        }
+        elsif (@children) {
+            _propagate_and_settle_children( $value_sr, \@children, $value_sr );
+        }
     };
 
     my $rejecter = sub {
@@ -267,7 +272,12 @@ sub new {
             $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
         }
 
-        _propagate_if_needed( $value_sr, \@children );
+        if ( _is_promise($$value_sr) ) {
+            _repromise( $value_sr, \@children, $value_sr );
+        }
+        elsif (@children) {
+            _propagate_and_settle_children( $value_sr, \@children, $value_sr );
+        }
     };
 
     local $@;
@@ -315,14 +325,6 @@ sub _propagate_and_settle_children {
     # It’s safe to do so because from here on $value_sr is
     # no longer a pending value.
     $_->_settle($value_sr) for splice @$children_ar;
-    return;
-}
-
-sub _propagate_if_needed {
-    my ( $value_sr, $children_ar ) = @_;
-
-    return _repromise( $value_sr, $children_ar, $value_sr ) if _is_promise($$value_sr);
-    return _propagate_and_settle_children( $value_sr, $children_ar, $value_sr ) if @$children_ar;
     return;
 }
 
@@ -408,9 +410,12 @@ sub _settle {
         }
     }
 
-    _propagate_if_needed(
-        @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX ],
-    );
+    if ( _is_promise( ${ $self->[_VALUE_SR_IDX] } ) ) {
+        _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
+    }
+    elsif ( @{ $self->[_CHILDREN_IDX] } ) {
+        _propagate_and_settle_children( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
+    }
 
     return;
 }
