@@ -256,6 +256,9 @@ sub new {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
 
+        # NB: UNIVERSAL::isa() is used in order to avoid an eval {}.
+        # It is acknowledged that many Perl experts strongly discourage
+        # use of this technique.
         if ( UNIVERSAL::isa( $$value_sr, __PACKAGE__ ) ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
