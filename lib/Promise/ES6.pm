@@ -321,13 +321,8 @@ sub _propagate_and_settle_children {
 sub _propagate_if_needed {
     my ( $value_sr, $children_ar ) = @_;
 
-    if ( _is_promise($$value_sr) ) {
-        return _repromise( $value_sr, $children_ar, $value_sr );
-    }
-    elsif (@$children_ar) {
-        return _propagate_and_settle_children( $value_sr, $children_ar, $value_sr );
-    }
-
+    return _repromise( $value_sr, $children_ar, $value_sr ) if _is_promise($$value_sr);
+    return _propagate_and_settle_children( $value_sr, $children_ar, $value_sr ) if @$children_ar;
     return;
 }
 
