@@ -300,33 +300,18 @@ sub _repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
     $$repromise_value_sr->then(
         sub {
-            _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _RESOLUTION_CLASS );
+            $$value_sr = $_[0];
+            bless $value_sr, _RESOLUTION_CLASS;
+            $_->_settle($value_sr) for splice @$children_ar;
         },
         sub {
-            _propagate_if_needed_repromise( $value_sr, $children_ar, bless \do { my $v = $_[0] }, _REJECTION_CLASS );
+            $$value_sr = $_[0];
+            bless $value_sr, _REJECTION_CLASS;
+            $_->_settle($value_sr) for splice @$children_ar;
         },
     );
     return;
 
-}
-
-sub _propagate_if_needed_repromise {
-    my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
-
-    if ( UNIVERSAL::isa( $$repromise_value_sr, __PACKAGE__ ) ) {
-        return _repromise( $value_sr, $children_ar, $repromise_value_sr );
-    }
-
-    $$value_sr = $$repromise_value_sr;
-    bless $value_sr, ref($repromise_value_sr);
-
-    # It may not be necessary to empty out @$children_ar, but
-    # let’s do so anyway so Perl will delete references ASAP.
-    # It’s safe to do so because from here on $value_sr is
-    # no longer a pending value.
-    $_->_settle($value_sr) for splice @$children_ar;
-
-    return;
 }
 
 sub then {
