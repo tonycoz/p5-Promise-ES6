@@ -255,7 +255,8 @@ sub new {
     my $resolver = sub {
         $$value_sr = $_[0];
 
-        if ( _is_promise($$value_sr) ) {
+        local $@;
+        if ( eval { $$value_sr->isa(__PACKAGE__) } ) {    # _is_promise
             bless $value_sr, _RESOLUTION_CLASS();
             _repromise( $value_sr, \@children, $value_sr );
         }
@@ -276,7 +277,8 @@ sub new {
             $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
         }
 
-        if ( _is_promise($$value_sr) ) {
+        local $@;
+        if ( eval { $$value_sr->isa(__PACKAGE__) } ) {    # _is_promise
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
