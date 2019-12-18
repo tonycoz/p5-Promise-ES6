@@ -22,6 +22,8 @@ sub resolve : Tests(1) {
 }
 
 sub resolve_with_promise : Tests(1) {
+    note "NONSTANDARD: The Promises/A+ test suite purposely avoids flexing this, but we match ES6.";
+
     my ($y, $n);
 
     my $p = Promise::ES6->new( sub {
