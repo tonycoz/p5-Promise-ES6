@@ -254,17 +254,14 @@ sub new {
     # depending on how $resolver and $rejector are used.
     my $resolver = sub {
         $$value_sr = $_[0];
+        bless $value_sr, _RESOLUTION_CLASS();
 
         local $@;
         if ( eval { $$value_sr->isa(__PACKAGE__) } ) {    # _is_promise
-            bless $value_sr, _RESOLUTION_CLASS();
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
             $_->_settle($value_sr) for splice @children;
-        }
-        else {
-            bless $value_sr, _RESOLUTION_CLASS();
         }
     };
 
