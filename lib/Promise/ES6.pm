@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.15_02';
+our $VERSION = '0.15_03';
 
 use constant {
 
