@@ -231,23 +231,13 @@ sub finally { $_[0]->then( $_[1], $_[1] ) }
 sub resolve {
     my ( $class, $value ) = @_;
 
-    return $class->new(
-        sub {
-            my ( $resolve, undef ) = @_;
-            $resolve->($value);
-        }
-    );
+    $class->new( sub { $_[0]->($value) } );
 }
 
 sub reject {
     my ( $class, $reason ) = @_;
 
-    return $class->new(
-        sub {
-            my ( undef, $reject ) = @_;
-            $reject->($reason);
-        }
-    );
+    $class->new( sub { $_[1]->($reason) } );
 }
 
 sub all {
