@@ -5,14 +5,6 @@ use warnings;
 
 our $VERSION = '0.15_03';
 
-use constant {
-
-    # These aren’t actually defined.
-    _RESOLUTION_CLASS => 'Promise::ES6::_RESOLUTION',
-    _REJECTION_CLASS  => 'Promise::ES6::_REJECTION',
-    _PENDING_CLASS    => 'Promise::ES6::_PENDING',
-};
-
 =encoding utf-8
 
 =head1 NAME
@@ -20,8 +12,6 @@ use constant {
 Promise::ES6 - ES6-style promises in Perl
 
 =head1 SYNOPSIS
-
-    $Promise::ES6::DETECT_MEMORY_LEAKS = 1;
 
     my $promise = Promise::ES6->new( sub {
         my ($resolve_cr, $reject_cr) = @_;
@@ -217,196 +207,13 @@ This library is licensed under the same terms as Perl itself.
 
 =cut
 
+#----------------------------------------------------------------------
+
 our $DETECT_MEMORY_LEAKS;
 
-# "$value_sr" => $value_sr
-our %_UNHANDLED_REJECTIONS;
+sub catch { $_[0]->then( undef, $_[1] ) }
 
-use constant {
-    _PID_IDX         => 0,
-    _CHILDREN_IDX    => 1,
-    _VALUE_SR_IDX    => 2,
-    _DETECT_LEAK_IDX => 3,
-    _ON_RESOLVE_IDX  => 4,
-    _ON_REJECT_IDX   => 5,
-};
-
-sub new {
-    my ( $class, $cr ) = @_;
-
-    die 'Need callback!' if !$cr;
-
-    my $value;
-    my $value_sr = bless \$value, _PENDING_CLASS();
-
-    my @children;
-
-    my $self = bless [
-        $$,
-        \@children,
-        $value_sr,
-        $DETECT_MEMORY_LEAKS,
-    ], $class;
-
-    my $suppress_unhandled_rejection_warning = 1;
-
-    # NB: These MUST NOT refer to $self, or else we can get memory leaks
-    # depending on how $resolver and $rejector are used.
-    my $resolver = sub {
-        $$value_sr = $_[0];
-        bless $value_sr, _RESOLUTION_CLASS();
-
-        # NB: UNIVERSAL::isa() is used in order to avoid an eval {}.
-        # It is acknowledged that many Perl experts strongly discourage
-        # use of this technique.
-        if ( UNIVERSAL::isa( $$value_sr, __PACKAGE__ ) ) {
-            _repromise( $value_sr, \@children, $value_sr );
-        }
-        elsif (@children) {
-            $_->_settle($value_sr) for splice @children;
-        }
-    };
-
-    my $rejecter = sub {
-        $$value_sr = $_[0];
-        bless $value_sr, _REJECTION_CLASS();
-
-        if ( !$suppress_unhandled_rejection_warning ) {
-            $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
-        }
-
-        if ( UNIVERSAL::isa( $$value_sr, __PACKAGE__ ) ) {
-            _repromise( $value_sr, \@children, $value_sr );
-        }
-        elsif (@children) {
-            $_->_settle($value_sr) for splice @children;
-        }
-    };
-
-    local $@;
-    if ( !eval { $cr->( $resolver, $rejecter ); 1 } ) {
-        $$value_sr = $@;
-        bless $value_sr, _REJECTION_CLASS();
-
-        $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
-    }
-
-    $suppress_unhandled_rejection_warning = 0;
-
-    return $self;
-}
-
-sub _repromise {
-    my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;
-    $$repromise_value_sr->then(
-        sub {
-            $$value_sr = $_[0];
-            bless $value_sr, _RESOLUTION_CLASS;
-            $_->_settle($value_sr) for splice @$children_ar;
-        },
-        sub {
-            $$value_sr = $_[0];
-            bless $value_sr, _REJECTION_CLASS;
-            $_->_settle($value_sr) for splice @$children_ar;
-        },
-    );
-    return;
-
-}
-
-sub then {
-    my ( $self, $on_resolve, $on_reject ) = @_;
-
-    my $value_sr = bless( \do { my $v }, _PENDING_CLASS() );
-
-    my $new = bless [
-        $$,
-        [],
-        $value_sr,
-        $DETECT_MEMORY_LEAKS,
-        $on_resolve,
-        $on_reject,
-      ],
-      ref($self);
-
-    if ( _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX] ) {
-        $new->_settle( $self->[_VALUE_SR_IDX] );
-    }
-    else {
-        push @{ $self->[_CHILDREN_IDX] }, $new;
-    }
-
-    return $new;
-}
-
-sub catch { return $_[0]->then( undef, $_[1] ) }
-
-sub finally {
-    my ( $self, $todo_cr ) = @_;
-
-    return $self->then( $todo_cr, $todo_cr );
-}
-
-# It’s gainfully faster to inline this:
-#sub _is_completed {
-#    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
-#}
-
-sub _settle {
-    my ( $self, $value_sr ) = @_;
-
-    die "$self already settled!" if _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX];
-
-    # A promise that new() created won’t have on-settle callbacks,
-    # but a promise that came from then/catch/finally will.
-    # It’s a good idea to delete the callbacks in order to trigger garbage
-    # collection as soon and as reliably as possible. It’s safe to do so
-    # because _settle() is only called once.
-    my $callback = $self->[ $value_sr->isa( _REJECTION_CLASS() ) ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
-
-    @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
-
-    # Only needed when catching, but the check would be more expensive
-    # than just always deleting. So, hey.
-    delete $_UNHANDLED_REJECTIONS{$value_sr};
-
-    if ($callback) {
-        my ($new_value);
-
-        local $@;
-
-        if ( eval { $new_value = $callback->($$value_sr); 1 } ) {
-            bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS() if !UNIVERSAL::isa( $new_value, __PACKAGE__ );
-        }
-        else {
-            $new_value = $@;
-
-            bless $self->[_VALUE_SR_IDX], _REJECTION_CLASS();
-            $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
-        }
-
-        ${ $self->[_VALUE_SR_IDX] } = $new_value;
-    }
-    else {
-        bless $self->[_VALUE_SR_IDX], ref($value_sr);
-        ${ $self->[_VALUE_SR_IDX] } = $$value_sr;
-
-        if ( $value_sr->isa( _REJECTION_CLASS() ) ) {
-            $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
-        }
-    }
-
-    if ( UNIVERSAL::isa( ${ $self->[_VALUE_SR_IDX] }, __PACKAGE__ ) ) {
-        _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
-    }
-    elsif ( @{ $self->[_CHILDREN_IDX] } ) {
-        $_->_settle( $self->[_VALUE_SR_IDX] ) for splice @{ $self->[_CHILDREN_IDX] };
-    }
-
-    return;
-}
-
-#----------------------------------------------------------------------
+sub finally { $_[0]->then( $_[1], $_[1] ) }
 
 sub resolve {
     my ( $class, $value ) = @_;
@@ -434,7 +241,7 @@ sub all {
     my ( $class, $iterable ) = @_;
     my @promises = map { UNIVERSAL::isa( $_, __PACKAGE__ ) ? $_ : $class->resolve($_) } @$iterable;
 
-    my @value_srs = map { $_->[_VALUE_SR_IDX] } @promises;
+    my @values;
 
     return $class->new(
         sub {
@@ -444,18 +251,26 @@ sub all {
             my $settled;
 
             if ($unresolved_size) {
+                my $p = 0;
+
                 for my $promise (@promises) {
+                    my $p = $p++;
+
                     my $new = $promise->then(
                         sub {
                             return if $settled;
+
+                            $values[$p] = $_[0];
 
                             $unresolved_size--;
                             return if $unresolved_size > 0;
 
                             $settled = 1;
-                            $resolve->( [ map { $$_ } @value_srs ] );
+                            $resolve->( \@values );
                         },
                         sub {
+
+                            # Needed because we might get multiple failures:
                             return if $settled;
 
                             $settled = 1;
@@ -515,18 +330,26 @@ sub race {
     return $new;
 }
 
-sub DESTROY {
-    return if $$ != $_[0][_PID_IDX];
+#----------------------------------------------------------------------
 
-    if ( $_[0][_DETECT_LEAK_IDX] && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT' ) {
-        warn( ( '=' x 70 ) . "\n" . 'XXXXXX - ' . ref( $_[0] ) . " survived until global destruction; memory leak likely!\n" . ( "=" x 70 ) . "\n" );
+my $loaded_backend;
+
+BEGIN {
+    # Put this block at the end so that the backend module
+    # can override any of the above.
+
+    return if $loaded_backend;
+
+    $loaded_backend = 1;
+
+    # These don’t exist yet but will:
+    if (!$ENV{'PROMISE_ES6_PP'} && eval { require Promise::ES6::XS }) {
+        require Promise::ES6::Backend::XS;
     }
 
-    if ( my $promise_value_sr = $_[0][_VALUE_SR_IDX] ) {
-        if ( my $value_sr = delete $_UNHANDLED_REJECTIONS{$promise_value_sr} ) {
-            my $ref = ref $_[0];
-            warn "$ref: Unhandled rejection: $$value_sr";
-        }
+    # Fall back to pure Perl:
+    else {
+        require Promise::ES6::Backend::PP;
     }
 }
 

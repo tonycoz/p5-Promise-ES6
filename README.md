@@ -4,8 +4,6 @@ Promise::ES6 - ES6-style promises in Perl
 
 # SYNOPSIS
 
-    $Promise::ES6::DETECT_MEMORY_LEAKS = 1;
-
     my $promise = Promise::ES6->new( sub {
         my ($resolve_cr, $reject_cr) = @_;
 
