@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.15_03';
+our $VERSION = '0.15_04';
 
 =encoding utf-8
 
@@ -39,8 +39,9 @@ for coordinating asynchronous tasks.
 
 Unlike most other promise implementations on CPAN, this module
 mimics ECMAScript 6’s L<Promise|https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise>
-class. As the SYNOPSIS above shows, you can thus use patterns from JavaScript
-in Perl with only minimal changes needed to accommodate language syntax.
+interface. As the SYNOPSIS above shows, you can thus use patterns from
+JavaScript in Perl with only minimal changes needed to accommodate language
+syntax.
 
 This is a rewrite of an earlier module, L<Promise::Tiny>. It fixes several
 bugs and superfluous dependencies in the original.
@@ -54,6 +55,18 @@ not a list.
 
 =item * Unhandled rejections are reported via C<warn()>. (See below
 for details.)
+
+=item * The Promises/A+ test suite avoids testing the case where an “executor”
+function’s resolve callback itself receives another promise, e.g.:
+
+    my $p = Promise::ES6->new( sub ($res) {
+        $res->( Promise::ES6->resolve(123) );
+    } );
+
+What will $p’s resolution value be? 123, or the promise that wraps it?
+
+This module favors conformity with the ES6 standard, which
+L<indicates intent|https://www.ecma-international.org/ecma-262/6.0/#sec-promise-executor> that $p’s resolution value be 123.
 
 =back
 
@@ -343,7 +356,7 @@ BEGIN {
     $loaded_backend = 1;
 
     # These don’t exist yet but will:
-    if (!$ENV{'PROMISE_ES6_PP'} && eval { require Promise::ES6::XS }) {
+    if (0 && !$ENV{'PROMISE_ES6_PP'} && eval { require Promise::ES6::XS }) {
         require Promise::ES6::Backend::XS;
     }
 

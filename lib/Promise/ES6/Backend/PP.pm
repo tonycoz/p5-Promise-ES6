@@ -107,11 +107,15 @@ sub then {
       ],
       ref($self);
 
-    if ( _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX] ) {
-        $new->_settle( $self->[_VALUE_SR_IDX] );
+    if ( _PENDING_CLASS eq ref $_[0][_VALUE_SR_IDX] ) {
+        push @{ $self->[_CHILDREN_IDX] }, $new;
     }
     else {
-        push @{ $self->[_CHILDREN_IDX] }, $new;
+
+        # $self might already be settled, in which case we immediately
+        # settle the $new promise as well.
+
+        $new->_settle( $self->[_VALUE_SR_IDX] );
     }
 
     return $new;
@@ -140,33 +144,54 @@ sub _repromise {
 #    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
 #}
 
+my $settle_is_rejection;
+
+# This method *only* runs when $self is “settled”:
 sub _settle {
-    my ( $self, $value_sr ) = @_;
+    my ( $self, $final_value_sr ) = @_;
 
     die "$self already settled!" if _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX];
+
+    $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
     # It’s a good idea to delete the callbacks in order to trigger garbage
     # collection as soon and as reliably as possible. It’s safe to do so
     # because _settle() is only called once.
-    my $callback = $self->[ $value_sr->isa( _REJECTION_CLASS() ) ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
+    my $callback = $self->[ $settle_is_rejection ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
 
     @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
 
-    # Only needed when catching, but the check would be more expensive
-    # than just always deleting. So, hey.
-    delete $_UNHANDLED_REJECTIONS{$value_sr};
+    # Only needed when $settle_is_rejection, but the check would be more
+    # expensive than just always deleting. So, hey.
+    delete $_UNHANDLED_REJECTIONS{$final_value_sr};
 
     if ($callback) {
+
+        # This is the block that runs for promises that were created by a
+        # call to then() that assigned a handler for the state that
+        # $final_value_sr indicates (i.e., resolved or rejected).
+
         my ($new_value);
 
         local $@;
 
-        if ( eval { $new_value = $callback->($$value_sr); 1 } ) {
+        if ( eval { $new_value = $callback->($$final_value_sr); 1 } ) {
+
+            # The callback succeeded. If $new_value is not itself a promise,
+            # then $self is now resolved. (Yay!) Note that this is true
+            # even if $final_value_sr indicates a rejection: in this case, we’ve
+            # just run a successful “catch” block, so resolution is correct.
+
+            # If $new_value IS a promise, though, then we have to wait.
+
             bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS() if !UNIVERSAL::isa( $new_value, __PACKAGE__ );
         }
         else {
+
+            # The callback errored, which means $self is now rejected.
+
             $new_value = $@;
 
             bless $self->[_VALUE_SR_IDX], _REJECTION_CLASS();
@@ -176,10 +201,15 @@ sub _settle {
         ${ $self->[_VALUE_SR_IDX] } = $new_value;
     }
     else {
-        bless $self->[_VALUE_SR_IDX], ref($value_sr);
-        ${ $self->[_VALUE_SR_IDX] } = $$value_sr;
 
-        if ( $value_sr->isa( _REJECTION_CLASS() ) ) {
+        # There was no handler from then(), so whatever state $final_value_sr
+        # indicates # (i.e., resolution or rejection) is now $self’s state
+        # as well.
+
+        bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
+        ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
+
+        if ( $settle_is_rejection ) {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
         }
     }

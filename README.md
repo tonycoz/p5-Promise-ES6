@@ -30,8 +30,9 @@ for coordinating asynchronous tasks.
 
 Unlike most other promise implementations on CPAN, this module
 mimics ECMAScript 6’s [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
-class. As the SYNOPSIS above shows, you can thus use patterns from JavaScript
-in Perl with only minimal changes needed to accommodate language syntax.
+interface. As the SYNOPSIS above shows, you can thus use patterns from
+JavaScript in Perl with only minimal changes needed to accommodate language
+syntax.
 
 This is a rewrite of an earlier module, [Promise::Tiny](https://metacpan.org/pod/Promise::Tiny). It fixes several
 bugs and superfluous dependencies in the original.
@@ -42,6 +43,17 @@ bugs and superfluous dependencies in the original.
 not a list.
 - Unhandled rejections are reported via `warn()`. (See below
 for details.)
+- The Promises/A+ test suite avoids testing the case where an “executor”
+function’s resolve callback itself receives another promise, e.g.:
+
+        my $p = Promise::ES6->new( sub ($res) {
+            $res->( Promise::ES6->resolve(123) );
+        } );
+
+    What will $p’s resolution value be? 123, or the promise that wraps it?
+
+    This module favors conformity with the ES6 standard, which
+    [indicates intent](https://www.ecma-international.org/ecma-262/6.0/#sec-promise-executor) that $p’s resolution value be 123.
 
 # COMPATIBILITY
 
