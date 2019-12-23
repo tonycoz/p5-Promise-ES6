@@ -62,7 +62,7 @@ use Promise::ES6;
                 \@warnings,
                 [],
                 'do NOT warn() when constructor callback rejects “peacefully”',
-            );
+            ) or diag explain \@warnings;
         },
         sub {
             Promise::ES6->new( sub { die 123 } )->then( sub { 234 } );
@@ -71,7 +71,7 @@ use Promise::ES6;
                 \@warnings,
                 [ re( qr<123> ) ],
                 'warn() only once',
-            );
+            ) or diag explain \@warnings;
         },
 
         sub {

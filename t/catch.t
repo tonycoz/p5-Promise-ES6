@@ -46,6 +46,7 @@ sub then_reject_catch : Tests {
         my ($reason) = @_;
         return $reason;
     });
+
     is_deeply PromiseTest::await($p), { message => 'oh my god', value => 123 };
 }
 

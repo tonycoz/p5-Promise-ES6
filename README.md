@@ -34,9 +34,6 @@ interface. As the SYNOPSIS above shows, you can thus use patterns from
 JavaScript in Perl with only minimal changes needed to accommodate language
 syntax.
 
-This is a rewrite of an earlier module, [Promise::Tiny](https://metacpan.org/pod/Promise::Tiny). It fixes several
-bugs and superfluous dependencies in the original.
-
 # INTERFACE NOTES
 
 - Promise resolutions and rejections accept exactly one argument,
@@ -61,6 +58,20 @@ Right now this doesn’t try for interoperability with other promise
 classes. If that’s something you want, make a feature request.
 
 See [Promise::ES6::Future](https://metacpan.org/pod/Promise::ES6::Future) if you need to interact with [Future](https://metacpan.org/pod/Future).
+
+# SPEED
+
+By default this class is pure Perl; however, applications that manage
+thousands of promises concurrently may want something faster.
+
+Toward that goal, you can **EXPERIMENTALLY** load this class thus:
+
+    use Promise::ES6 ( backend => 'XS' );
+
+… to use [Promise::XS](https://metacpan.org/pod/Promise::XS) for most of the promise logic. This will confer a
+significant speed advantage.
+
+For maximum speed, though, use [Promise::XS](https://metacpan.org/pod/Promise::XS) directly.
 
 # UNHANDLED REJECTIONS
 
@@ -179,8 +190,17 @@ introductions to the topic. You might start with
 Promise::ES6 serves much the same role as [Future](https://metacpan.org/pod/Future) but exposes
 a standard, minimal, cross-language API rather than a proprietary (large) one.
 
-CPAN contains a number of other modules that implement promises. I think
-mine is the nicest :), but YMMV. Enjoy!
+CPAN contains a number of other modules that implement promises. A few
+of note are:
+
+- [Promise::XS](https://metacpan.org/pod/Promise::XS), [AnyEvent::XSPromises](https://metacpan.org/pod/AnyEvent::XSPromises) - XS-powered promises.
+Use one of these for maximum speed.
+- [Promises](https://metacpan.org/pod/Promises) - Perhaps CPAN’s most widely-used promise implementation.
+- [Mojo::Promise](https://metacpan.org/pod/Mojo::Promise) - Part of [Mojolicious](https://metacpan.org/pod/Mojolicious), tightly integrated to that
+package.
+- [Promise::Tiny](https://metacpan.org/pod/Promise::Tiny) - The forerunner to the present module. It
+implements the same interface but has a number of bugs that proved hard
+enough to fix that I felt a full rewrite was needed.
 
 # LICENSE & COPYRIGHT
 
