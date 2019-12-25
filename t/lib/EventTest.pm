@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use autodie;
 
+use parent 'Test::Class::Tiny';
+
 use Test::More;
 use Test::FailWarnings -allow_deps => 1;
 
@@ -13,7 +15,7 @@ sub _FULL_BACKEND {
     return "Promise::ES6::" . $_[0]->_BACKEND();
 }
 
-sub run {
+sub T0_run {
     my ($class) = @_;
 
     plan tests => _TEST_COUNT();

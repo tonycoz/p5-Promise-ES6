@@ -6,13 +6,13 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
-use parent qw(Test::Class);
+use parent qw(Test::Class::Tiny);
 use Test::More;
 use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub resolve : Tests(1) {
+sub T1_resolve {
     Promise::ES6->resolve(123)->then(sub {
         my ($value) = @_;
         is $value, 123;
@@ -21,7 +21,7 @@ sub resolve : Tests(1) {
     });
 }
 
-sub resolve_with_promise : Tests(1) {
+sub T1_resolve_with_promise {
     note "NONSTANDARD: The Promises/A+ test suite purposely avoids flexing this, but we match ES6.";
 
     my ($y, $n);
@@ -39,4 +39,6 @@ sub resolve_with_promise : Tests(1) {
     } );
 }
 
-__PACKAGE__->runtests;
+__PACKAGE__->runtests if !caller;
+
+1;

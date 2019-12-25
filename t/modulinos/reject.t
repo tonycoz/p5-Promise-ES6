@@ -6,13 +6,13 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
-use parent qw(Test::Class);
+use parent qw(Test::Class::Tiny);
 use Test::More;
 use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub reject : Tests(1) {
+sub T1_reject {
     Promise::ES6->reject('oh my god')->then(sub {
         die;
     }, sub {
@@ -21,4 +21,6 @@ sub reject : Tests(1) {
     });
 }
 
-__PACKAGE__->runtests;
+__PACKAGE__->runtests if !caller;
+
+1;

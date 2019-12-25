@@ -1,5 +1,11 @@
+#!/usr/bin/env perl
+
+package t::all_async;
+
 use strict;
 use warnings;
+
+use parent 'Test::Class::Tiny';
 
 use Test::More;
 use Test::FailWarnings;
@@ -13,7 +19,7 @@ use PromiseTest;
 
 use Promise::ES6;
 
-{
+sub T0_tests {
     my $eventer = Eventer->new();
 
     my ($resolve1, $resolve2);
@@ -66,4 +72,6 @@ use Promise::ES6;
     waitpid $pid, 0;
 }
 
-done_testing;
+__PACKAGE__->runtests() if !caller;
+
+1;

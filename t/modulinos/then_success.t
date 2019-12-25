@@ -1,5 +1,11 @@
+#!/usr/bin/env perl
+
+package t::then_success;
+
 use strict;
 use warnings;
+
+use parent qw(Test::Class::Tiny);
 
 use Test::More;
 use Test::Fatal;
@@ -14,9 +20,9 @@ use PromiseTest;
 
 use Promise::ES6;
 
-my $test_value = 'first';
+sub T0_tests {
+    my $test_value = 'first';
 
-{
     my @todo;
 
     my $eventer = Eventer->new();
@@ -82,4 +88,6 @@ my $test_value = 'first';
     waitpid $pid, 0;
 }
 
-done_testing;
+__PACKAGE__->runtests() if !caller;
+
+1;

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-package t::mojo;
+package t::ioasync;
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ use parent qw( EventTest );
 
 my ($LOOP, $LOOP_GUARD);
 
-__PACKAGE__->run();
+__PACKAGE__->runtests() if !caller;
 
 use constant _BACKEND => 'IOAsync';
 
@@ -36,3 +36,5 @@ sub _RESOLVE {
 
     $LOOP->run();
 }
+
+1;

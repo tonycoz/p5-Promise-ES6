@@ -1,7 +1,11 @@
 #!/usr/bin/env perl
 
+package t::unhandled_rejection;
+
 use strict;
 use warnings;
+
+use parent qw(Test::Class::Tiny);
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
@@ -13,7 +17,7 @@ use Test::FailWarnings;
 
 use Promise::ES6;
 
-{
+sub T0_tests {
     my @warnings;
     local $SIG{'__WARN__'} = sub { push @warnings, @_ };
 
@@ -93,4 +97,6 @@ use Promise::ES6;
     }
 }
 
-done_testing();
+__PACKAGE__->runtests() if !caller;
+
+1;

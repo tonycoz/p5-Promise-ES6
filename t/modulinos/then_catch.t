@@ -10,11 +10,11 @@ use MemoryCheck;
 use Test::More;
 use Test::FailWarnings;
 
-use parent qw(Test::Class);
+use parent qw(Test::Class::Tiny);
 
 use Promise::ES6;
 
-sub then_catch : Tests {
+sub T0_then_catch {
     my $caught;
 
     my $p = Promise::ES6->new( sub {
@@ -33,3 +33,5 @@ sub then_catch : Tests {
 }
 
 __PACKAGE__->runtests() if !caller;
+
+1;

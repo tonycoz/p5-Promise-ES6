@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::FailWarnings;
-use parent qw(Test::Class);
+use parent qw(Test::Class::Tiny);
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
@@ -13,7 +13,7 @@ use MemoryCheck;
 
 use Promise::ES6;
 
-sub multi_then : Tests {
+sub T0_multi_then {
     my $caught;
 
     my ($resolve, $reject);
@@ -35,3 +35,5 @@ sub multi_then : Tests {
 }
 
 __PACKAGE__->runtests() if !caller;
+
+1;

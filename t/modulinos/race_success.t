@@ -1,5 +1,11 @@
+#!/usr/bin/env perl
+
+package t::race_success;
+
 use strict;
 use warnings;
+
+use parent qw(Test::Class::Tiny);
 
 use Test::More;
 use Test::FailWarnings;
@@ -13,7 +19,7 @@ use PromiseTest;
 
 use Promise::ES6;
 
-{
+sub T0_tests {
     my $eventer = Eventer->new();
 
     my @resolves;
@@ -28,24 +34,23 @@ use Promise::ES6;
             }
         };
     });
-
     my $p2 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
         push @resolves, sub {
             if ($eventer->has_happened('ready2') && !$eventer->has_happened('resolved2')) {
-                $resolve->(2);
+                $reject->({ message => 'fail' });
                 $eventer->happen('resolved2');
             }
         };
     });
 
     my $pid = fork or do {
-        $eventer->happen('ready2');
-
-        $eventer->wait_until('resolved2');
-
         $eventer->happen('ready1');
+
+        $eventer->wait_until('resolved1');
+
+        $eventer->happen('ready2');
 
         exit;
     };
@@ -53,7 +58,7 @@ use Promise::ES6;
     my $race = Promise::ES6->race([$p1, $p2]);
 
     my $value = PromiseTest::await( $race, \@resolves );
-    is $value, 2;
+    is $value, 1;
 
     waitpid $pid, 0;
 
@@ -62,4 +67,6 @@ use Promise::ES6;
     splice @resolves if $^V lt 5.18.0;
 }
 
-done_testing();
+__PACKAGE__->runtests() if !caller;
+
+1;

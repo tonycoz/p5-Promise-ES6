@@ -11,7 +11,7 @@ use lib "$FindBin::Bin/lib";
 
 use parent qw( EventTest );
 
-__PACKAGE__->run();
+__PACKAGE__->runtests() if !caller;
 
 use constant _BACKEND => 'AnyEvent';
 
@@ -26,3 +26,5 @@ sub _RESOLVE {
     $promise->finally($cv);
     $cv->recv();
 }
+
+1;

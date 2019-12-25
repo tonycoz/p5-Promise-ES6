@@ -1,5 +1,11 @@
+#!/usr/bin/env perl
+
+package t::await_then_with_async;
+
 use strict;
 use warnings;
+
+use parent qw(Test::Class::Tiny);
 
 use Test::More;
 use Test::FailWarnings;
@@ -13,9 +19,9 @@ use PromiseTest;
 
 use Promise::ES6;
 
-diag "MASTER PID: $$";
+sub T0_tests {
+    diag "MASTER PID: $$";
 
-{
     my $eventer = Eventer->new();
 
     my @checkers;
@@ -61,4 +67,6 @@ diag "MASTER PID: $$";
     waitpid $pid, 0;
 }
 
-done_testing();
+__PACKAGE__->runtests() if !caller;
+
+1;

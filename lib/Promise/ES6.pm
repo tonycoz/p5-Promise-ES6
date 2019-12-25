@@ -259,6 +259,12 @@ sub new {
     return _new(@_);
 }
 
+sub import {
+    my %opts = @_[ 1 .. $#_ ];
+
+    _load_backend( $opts{'backend'} );
+}
+
 sub catch { $_[0]->then( undef, $_[1] ) }
 
 sub finally { $_[0]->then( $_[1], $_[1] ) }
@@ -283,6 +289,7 @@ sub all {
 
     return $class->new(
         sub {
+print STDERR "----- in executor\n";
             my ( $resolve, $reject ) = @_;
             my $unresolved_size = scalar(@promises);
 
@@ -307,6 +314,7 @@ sub all {
                             $resolve->( \@values );
                         },
                         sub {
+print STDERR "# ------- ALL-REJECT\n";
 
                             # Needed because we might get multiple failures:
                             return if $settled;
@@ -382,9 +390,6 @@ sub _load_backend {
 
         return;
     }
-
-#use blib '/Users/felipe/code/p5-Promise-XS';
-#require Promise::ES6::Backend::XS;
 
     if ($want_backend) {
         if ($want_backend eq 'XS') {

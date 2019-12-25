@@ -7,7 +7,7 @@ use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 use PromiseTest;
 
-use parent qw(Test::Class);
+use parent qw(Test::Class::Tiny);
 
 use Time::HiRes;
 
@@ -17,7 +17,7 @@ use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub reject_catch : Tests {
+sub T0_reject_catch {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -30,7 +30,7 @@ sub reject_catch : Tests {
     is PromiseTest::await($p), 'oh my god!';
 }
 
-sub then_reject_catch : Tests {
+sub T0_then_reject_catch {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -50,7 +50,7 @@ sub then_reject_catch : Tests {
     is_deeply PromiseTest::await($p), { message => 'oh my god', value => 123 };
 }
 
-sub exception_catch : Tests {
+sub T0_exception_catch {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -62,7 +62,7 @@ sub exception_catch : Tests {
     }, { message => 'oh my god!!' };
 }
 
-sub then_exception_await : Tests {
+sub T0_then_exception_await {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -75,7 +75,7 @@ sub then_exception_await : Tests {
     is_deeply exception { PromiseTest::await($p) }, { message => 123 };
 }
 
-sub exception_then_await : Tests {
+sub T0_exception_then_await {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -91,7 +91,7 @@ sub exception_then_await : Tests {
     is_deeply PromiseTest::await($p), { reason => { message => 'oh my god!!!' } };
 }
 
-sub exception_catch_then_await : Tests {
+sub T0_exception_catch_then_await {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -107,4 +107,6 @@ sub exception_catch_then_await : Tests {
     is_deeply PromiseTest::await($p), { recover => 1, reason => { message => 'oh my god!!!' } };
 }
 
-__PACKAGE__->new()->runtests;
+__PACKAGE__->new()->runtests if !caller;
+
+1;
