@@ -2,8 +2,13 @@ package t::await;
 use strict;
 use warnings;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
+
+
 use MemoryCheck;
 use PromiseTest;
 
@@ -68,6 +73,8 @@ sub T0_then_await {
     is PromiseTest::await($promise), 123 * 2, 'get resolved value';
 }
 
-__PACKAGE__->new()->runtests if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

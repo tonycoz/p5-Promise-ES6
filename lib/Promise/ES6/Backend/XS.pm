@@ -1,27 +1,19 @@
 package Promise::ES6;
 
+# This backend uses Promise::XS to implement most functionality.
+
 use Promise::XS ();
 
-#BEGIN {
-#    *DETECT_MEMORY_LEAKS = \$Promise::ES6::XS::DETECT_MEMORY_LEAKS;
-#
-#    no strict 'refs';
-#    for my $fn ( qw( new then catch finally resolve reject all race DESTROY ) ) {
-#        if (Promise::ES6::XS->can($fn)) {
-#            *{$fn} = Promise::ES6::XS->can($fn);
-#        }
-#    }
-#}
+*DETECT_MEMORY_LEAKS = *Promise::XS::DETECT_MEMORY_LEAKS;
 
 sub _new {
     my ($class, $cr) = @_;
 
     my $deferred = Promise::XS::deferred();
 
-    # 2nd el = warn on unhandled rejection
-    my $self = [ $deferred->promise() ];
+    my $self = \( $deferred->promise() );
 
-    my $soft_reject;
+    my $soft_reject = 1;
 
     my $ok = eval {
         $cr->(
@@ -39,14 +31,14 @@ sub _new {
             },
             sub {
                 $deferred->reject($_[0]);
-                $soft_reject = 1;
+                $deferred->clear_unhandled_rejection() if $soft_reject;
             },
         );
 
         1;
     };
 
-    $self->[1] = 1 if $soft_reject;
+    $soft_reject = 0;
 
     if (!$ok) {
         $deferred->reject(my $err = $@);
@@ -58,21 +50,7 @@ sub _new {
 sub then {
     my ($self, $on_res, $on_rej) = @_;
 
-    return bless [ $self->[0]->then( $on_res, $on_rej ) ], ref($self);
-}
-
-sub DESTROY {
-    my ($self) = @_;
-
-    if (!$self->[1]) {
-        my $unhandled_rejection_sr = $self->[0]->_unhandled_rejection_sr();
-
-        if ($unhandled_rejection_sr) {
-            warn "$self: Unhandled rejection: $$unhandled_rejection_sr";
-        }
-    }
-
-    return;
+    return bless \( $$self->then( $on_res, $on_rej ) ), ref($self);
 }
 
 1;

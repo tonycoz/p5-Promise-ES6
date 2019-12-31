@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-use Promise::ES6 ();
+use Promise::ES6 ( backend => 'XS' );
 
 use Data::Dumper;
 
@@ -27,27 +27,24 @@ BEGIN {
     # To ensure that we’ve loaded a backend:
     Promise::ES6->new( sub {} );
 
-    if ( my $destroy_cr = Promise::ES6->can('DESTROY') ) {
-        no warnings 'redefine';
-        *Promise::ES6::DESTROY = sub {
-            my $warn_gd = ($$ == $MASTER_PID);
+    my $destroy_cr = Promise::ES6->can('DESTROY');
 
-            $warn_gd &&= $has_devel_gd ? Devel::GlobalDestruction::in_global_destruction() : (${^GLOBAL_PHASE} && ('DESTRUCT' eq ${^GLOBAL_PHASE}));
+    no warnings 'redefine';
+    *Promise::ES6::DESTROY = sub {
+        my $warn_gd = ($$ == $MASTER_PID);
 
-            if ($warn_gd) {
-                print STDERR "XXX XXX XXX --- PID $$: DESTROYing Promise::ES6 at DESTRUCT time!$/";
-                print STDERR Dumper(@_);
+        $warn_gd &&= $has_devel_gd ? Devel::GlobalDestruction::in_global_destruction() : (${^GLOBAL_PHASE} && ('DESTRUCT' eq ${^GLOBAL_PHASE}));
 
-                # Avoid exit() so that we’ll see all possible problems.
-                $? = 1;
-            }
+        if ($warn_gd) {
+            print STDERR "XXX XXX XXX --- PID $$: DESTROYing Promise::ES6 at DESTRUCT time!$/";
+            print STDERR Dumper(@_);
 
-            return $destroy_cr->(@_);
-        };
-    }
-    else {
-        diag "XXX No DESTROY implementation (Backend: $Promise::ES6::BACKEND)";
-    }
+            # Avoid exit() so that we’ll see all possible problems.
+            $? = 1;
+        }
+
+        return $destroy_cr->(@_) if $destroy_cr;
+    };
 }
 
 1;

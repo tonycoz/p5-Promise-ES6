@@ -14,7 +14,7 @@ SKIP: {
     require Promise::ES6;
 
     eval { Promise::ES6->import( backend => 'XS' ); 1 } or do {
-        skip "Failed to load XS: $@";
+        skip "Failed to load XS backend: $@";
     };
 
     BackendTest::run_modulinos();

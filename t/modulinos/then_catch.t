@@ -3,8 +3,11 @@ package t::then_catch;
 use strict;
 use warnings;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
 use MemoryCheck;
 
 use Test::More;
@@ -32,6 +35,8 @@ sub T0_then_catch {
     is( $caught, 'oops', 'caught as expected' );
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

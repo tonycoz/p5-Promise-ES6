@@ -10,8 +10,12 @@ use parent 'Test::Class::Tiny';
 use Test::More;
 use Test::FailWarnings;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
+
 use MemoryCheck;
 
 use Eventer;
@@ -72,6 +76,8 @@ sub T0_tests {
     waitpid $pid, 0;
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

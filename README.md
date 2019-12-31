@@ -105,7 +105,7 @@ _immediately_. That means that this:
 
 This is an intentional divergence from
 [the Promises/A+ specification](https://promisesaplus.com/#point-34).
-A key advantage of this design is that Promise::ES6 instances can abstract
+An advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
 If you want a Promises/A+-compliant implementation, look at

@@ -19,6 +19,8 @@ sub T1_tests {
     ok 1;
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

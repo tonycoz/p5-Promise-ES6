@@ -2,8 +2,14 @@ package t::catch;
 use strict;
 use warnings;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+use File::Spec;
+
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
+
 use MemoryCheck;
 use PromiseTest;
 
@@ -30,7 +36,7 @@ sub T0_reject_catch {
     is PromiseTest::await($p), 'oh my god!';
 }
 
-sub T0_then_reject_catch {
+sub T1_then_reject_catch {
     my ($self) = @_;
 
     my $p = Promise::ES6->new(sub {
@@ -38,10 +44,13 @@ sub T0_then_reject_catch {
         $resolve->(123);
     })->then(sub {
         my ($value) = @_;
-        return Promise::ES6->new(sub {
+        my $p = Promise::ES6->new(sub {
             my ($resolve, $reject) = @_;
-            die { message => 'oh my god', value => $value };
+            # die { message => 'oh my god', value => $value };
+            $reject->( { message => 'oh my god', value => $value } );
         });
+
+        return $p;
     })->catch(sub {
         my ($reason) = @_;
         return $reason;
@@ -107,6 +116,8 @@ sub T0_exception_catch_then_await {
     is_deeply PromiseTest::await($p), { recover => 1, reason => { message => 'oh my god!!!' } };
 }
 
-__PACKAGE__->new()->runtests if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

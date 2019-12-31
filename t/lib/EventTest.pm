@@ -9,16 +9,12 @@ use parent 'Test::Class::Tiny';
 use Test::More;
 use Test::FailWarnings -allow_deps => 1;
 
-use constant _TEST_COUNT => 6;
-
 sub _FULL_BACKEND {
     return "Promise::ES6::" . $_[0]->_BACKEND();
 }
 
-sub T0_run {
+sub T6_run {
     my ($class) = @_;
-
-    plan tests => _TEST_COUNT();
 
   SKIP: {
         eval { $class->_REQUIRE(); 1 } or skip "$class: Backend isn’t available: $@", _TEST_COUNT();

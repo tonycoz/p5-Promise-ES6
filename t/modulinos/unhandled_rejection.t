@@ -7,8 +7,14 @@ use warnings;
 
 use parent qw(Test::Class::Tiny);
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+use File::Spec;
+
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
+
 use MemoryCheck;
 
 use Test::More;

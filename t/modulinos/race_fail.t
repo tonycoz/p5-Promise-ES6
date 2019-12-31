@@ -11,8 +11,11 @@ use Test::More;
 use Test::Fatal;
 use Test::FailWarnings;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
 use MemoryCheck;
 
 use Eventer;
@@ -70,6 +73,8 @@ sub T0_tests {
     splice @resolves if $^V lt 5.18.0;
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

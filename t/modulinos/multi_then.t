@@ -7,8 +7,11 @@ use Test::More;
 use Test::FailWarnings;
 use parent qw(Test::Class::Tiny);
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
 use MemoryCheck;
 
 use Promise::ES6;
@@ -34,6 +37,8 @@ sub T0_multi_then {
     ok( $then2_ok, 'second then() called' );
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

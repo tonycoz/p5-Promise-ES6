@@ -12,8 +12,11 @@ use Test::FailWarnings;
 
 use Promise::ES6;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
 use MemoryCheck;
 
 sub T0_tests {
@@ -27,6 +30,8 @@ sub T0_tests {
     }
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

@@ -74,6 +74,8 @@ sub T0_tests {
     }
 }
 
-__PACKAGE__->runtests() if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;

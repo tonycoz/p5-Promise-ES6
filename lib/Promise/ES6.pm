@@ -125,7 +125,7 @@ I<immediately>. That means that this:
 
 This is an intentional divergence from
 L<the Promises/A+ specification|https://promisesaplus.com/#point-34>.
-A key advantage of this design is that Promise::ES6 instances can abstract
+An advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
 If you want a Promises/A+-compliant implementation, look at
@@ -289,7 +289,6 @@ sub all {
 
     return $class->new(
         sub {
-print STDERR "----- in executor\n";
             my ( $resolve, $reject ) = @_;
             my $unresolved_size = scalar(@promises);
 
@@ -297,6 +296,15 @@ print STDERR "----- in executor\n";
 
             if ($unresolved_size) {
                 my $p = 0;
+
+                my $on_reject_cr = sub {
+
+                    # Needed because we might get multiple failures:
+                    return if $settled;
+
+                    $settled = 1;
+                    $reject->(@_);
+                };
 
                 for my $promise (@promises) {
                     my $p = $p++;
@@ -313,15 +321,7 @@ print STDERR "----- in executor\n";
                             $settled = 1;
                             $resolve->( \@values );
                         },
-                        sub {
-print STDERR "# ------- ALL-REJECT\n";
-
-                            # Needed because we might get multiple failures:
-                            return if $settled;
-
-                            $settled = 1;
-                            $reject->(@_);
-                        },
+                        $on_reject_cr,
                     );
                 }
             }
@@ -348,29 +348,30 @@ sub race {
 
     my $is_done;
 
+    my $on_resolve_cr = sub {
+        return if $is_done;
+        $is_done = 1;
+
+        $resolve->( $_[0] );
+
+        # Proactively eliminate references:
+        $resolve = $reject = undef;
+    };
+
+    my $on_reject_cr = sub {
+        return if $is_done;
+        $is_done = 1;
+
+        $reject->( $_[0] );
+
+        # Proactively eliminate references:
+        $resolve = $reject = undef;
+    };
+
     for my $promise (@promises) {
         last if $is_done;
 
-        $promise->then(
-            sub {
-                return if $is_done;
-                $is_done = 1;
-
-                $resolve->( $_[0] );
-
-                # Proactively eliminate references:
-                $resolve = $reject = undef;
-            },
-            sub {
-                return if $is_done;
-                $is_done = 1;
-
-                $reject->( $_[0] );
-
-                # Proactively eliminate references:
-                $resolve = $reject = undef;
-            }
-        );
+        $promise->then( $on_resolve_cr, $on_reject_cr );
     }
 
     return $new;

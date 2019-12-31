@@ -2,8 +2,12 @@ package t::all;
 use strict;
 use warnings;
 
-use FindBin;
-use lib "$FindBin::Bin/lib";
+BEGIN {
+    my @path = File::Spec->splitdir( __FILE__ );
+    splice( @path, -2, 2, 'lib' );
+    push @INC, File::Spec->catdir(@path);
+}
+
 use MemoryCheck;
 
 use PromiseTest;
@@ -95,7 +99,6 @@ sub T0_all_multiple_fails {
     });
 
     my $all = Promise::ES6->all([$p1, $p2]);
-diag explain $all;
 
     my $err = exception { PromiseTest::await($all) };
 
@@ -133,6 +136,8 @@ sub T0_all_empty {
     is( $foo, 42, 'all() resolves immediately when given an empty list' );
 }
 
-__PACKAGE__->runtests if !caller;
+if (!caller) {
+    __PACKAGE__->runtests();
+}
 
 1;
