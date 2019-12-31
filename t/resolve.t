@@ -2,20 +2,17 @@ package t::resolve;
 use strict;
 use warnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
-use parent qw(Test::Class::Tiny);
+use parent qw(Test::Class);
 use Test::More;
 use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub T1_resolve {
+sub resolve : Tests(1) {
     Promise::ES6->resolve(123)->then(sub {
         my ($value) = @_;
         is $value, 123;
@@ -24,7 +21,7 @@ sub T1_resolve {
     });
 }
 
-sub T1_resolve_with_promise {
+sub resolve_with_promise : Tests(1) {
     note "NONSTANDARD: The Promises/A+ test suite purposely avoids flexing this, but we match ES6.";
 
     my ($y, $n);
@@ -42,8 +39,4 @@ sub T1_resolve_with_promise {
     } );
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+__PACKAGE__->runtests;

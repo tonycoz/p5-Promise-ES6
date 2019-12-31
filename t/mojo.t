@@ -6,23 +6,16 @@ use strict;
 use warnings;
 use autodie;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 
 use parent qw( EventTest );
-
-use Test::More;
 
 use constant _BACKEND => 'Mojo';
 
 #----------------------------------------------------------------------
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
+__PACKAGE__->run();
 
 #----------------------------------------------------------------------
 
@@ -37,5 +30,3 @@ sub _RESOLVE {
 
     Mojo::IOLoop->start();
 }
-
-1;

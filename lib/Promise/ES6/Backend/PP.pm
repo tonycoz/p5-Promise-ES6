@@ -27,7 +27,7 @@ use constant {
 # "$value_sr" => $value_sr
 our %_UNHANDLED_REJECTIONS;
 
-sub _new {
+sub new {
     my ( $class, $cr ) = @_;
 
     die 'Need callback!' if !$cr;
@@ -120,8 +120,6 @@ sub then {
 
     return $new;
 }
-
-#----------------------------------------------------------------------
 
 sub _repromise {
     my ( $value_sr, $children_ar, $repromise_value_sr ) = @_;

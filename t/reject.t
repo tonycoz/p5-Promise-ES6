@@ -2,20 +2,17 @@ package t::reject;
 use strict;
 use warnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
-use parent qw(Test::Class::Tiny);
+use parent qw(Test::Class);
 use Test::More;
 use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub T1_reject {
+sub reject : Tests(1) {
     Promise::ES6->reject('oh my god')->then(sub {
         die;
     }, sub {
@@ -24,8 +21,4 @@ sub T1_reject {
     });
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+__PACKAGE__->runtests;

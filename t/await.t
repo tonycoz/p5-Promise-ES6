@@ -2,17 +2,12 @@ package t::await;
 use strict;
 use warnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
-
-
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 use PromiseTest;
 
-use parent qw(Test::Class::Tiny);
+use parent qw(Test::Class);
 
 use Time::HiRes;
 
@@ -22,7 +17,7 @@ use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub T0_await_func {
+sub await_func : Tests {
     my ($self) = @_;
 
     my $promise = Promise::ES6->new(sub {
@@ -34,7 +29,7 @@ sub T0_await_func {
     is PromiseTest::await($promise), 123, 'get resolved value';
 }
 
-sub T0_reject_await {
+sub reject_await : Tests {
     my ($self) = @_;
 
     my $promise = Promise::ES6->new(sub {
@@ -46,7 +41,7 @@ sub T0_reject_await {
     is_deeply exception { PromiseTest::await($promise) }, { message => 'oh my god' };
 }
 
-sub T0_exception_await {
+sub exception_await : Tests {
     my ($self) = @_;
 
     my $promise = Promise::ES6->new(sub {
@@ -58,7 +53,7 @@ sub T0_exception_await {
     is_deeply exception { PromiseTest::await($promise) }, { message => 'oh my god' };
 }
 
-sub T0_then_await {
+sub then_await : Tests {
     my ($self) = @_;
 
     my $promise = Promise::ES6->new(sub {
@@ -73,8 +68,4 @@ sub T0_then_await {
     is PromiseTest::await($promise), 123 * 2, 'get resolved value';
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+__PACKAGE__->new()->runtests;

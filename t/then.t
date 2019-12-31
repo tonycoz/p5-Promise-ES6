@@ -2,13 +2,10 @@ package t::then;
 use strict;
 use warnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
-use parent qw(Test::Class::Tiny);
+use parent qw(Test::Class);
 
 use Time::HiRes;
 
@@ -17,7 +14,7 @@ use Test::FailWarnings;
 
 use Promise::ES6;
 
-sub T0_already_resolved {
+sub already_resolved : Tests {
     my $called = 0;
     my $p = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
@@ -27,11 +24,7 @@ sub T0_already_resolved {
     $p->then(sub {
         $called = 'called';
     });
-    is $called, 'called', 'call fulfilled callback if promise already resolved';
+    is $called, 'called', 'call fulfilled callback if promise already reasolved';
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+__PACKAGE__->runtests;

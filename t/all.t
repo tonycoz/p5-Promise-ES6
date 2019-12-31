@@ -2,17 +2,13 @@ package t::all;
 use strict;
 use warnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
-
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
 use PromiseTest;
 
-use parent qw(Test::Class::Tiny);
+use parent qw(Test::Class);
 
 use Time::HiRes;
 
@@ -23,7 +19,7 @@ use Test::Deep;
 
 use Promise::ES6;
 
-sub T0_test_all {
+sub test_all : Tests {
     my $self = shift;
 
     my $p1 = Promise::ES6->new(sub {
@@ -39,14 +35,14 @@ sub T0_test_all {
     is_deeply( PromiseTest::await( $all ), [1, 2, 3] );
 }
 
-sub T0_all_values {
+sub all_values : Tests {
     my ($self) = @_;
 
     my $all = Promise::ES6->all([1, 2]);
     is_deeply( PromiseTest::await($all), [1,2] );
 }
 
-sub T0_all_fail {
+sub all_fail : Tests {
     my ($self) = @_;
 
     my $p1 = Promise::ES6->new(sub {
@@ -66,7 +62,7 @@ sub T0_all_fail {
     );
 }
 
-sub T0_all_fail_then_succeed {
+sub all_fail_then_succeed : Tests {
     my ($self) = @_;
 
     my $p1 = Promise::ES6->new(sub {
@@ -86,7 +82,7 @@ sub T0_all_fail_then_succeed {
     );
 }
 
-sub T0_all_multiple_fails {
+sub all_multiple_fails : Tests {
     my ($self) = @_;
 
     my $p1 = Promise::ES6->new(sub {
@@ -100,15 +96,13 @@ sub T0_all_multiple_fails {
 
     my $all = Promise::ES6->all([$p1, $p2]);
 
-    my $err = exception { PromiseTest::await($all) };
-
     cmp_deeply(
-        $err,
+        exception { PromiseTest::await($all) },
         re( qr<\A42 > ),
     );
 }
 
-sub T0_all_exception {
+sub all_exception : Tests {
     my ($self) = @_;
 
     my $p1 = Promise::ES6->new(sub {
@@ -128,7 +122,7 @@ sub T0_all_exception {
     );
 }
 
-sub T0_all_empty {
+sub all_empty : Tests {
     my $foo;
 
     Promise::ES6->all([])->then( sub { $foo = 42 } );
@@ -136,8 +130,4 @@ sub T0_all_empty {
     is( $foo, 42, 'all() resolves immediately when given an empty list' );
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+__PACKAGE__->new()->runtests;

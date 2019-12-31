@@ -1,21 +1,11 @@
-#!/usr/bin/env perl
-
-package t::race_fail;
-
 use strict;
 use warnings;
 
-use parent qw(Test::Class::Tiny);
-
 use Test::More;
-use Test::Fatal;
 use Test::FailWarnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
 use Eventer;
@@ -23,7 +13,7 @@ use PromiseTest;
 
 use Promise::ES6;
 
-sub T0_tests {
+{
     my $eventer = Eventer->new();
 
     my @resolves;
@@ -44,7 +34,7 @@ sub T0_tests {
 
         push @resolves, sub {
             if ($eventer->has_happened('ready2') && !$eventer->has_happened('resolved2')) {
-                $reject->({ message => 'fail' });
+                $resolve->(2);
                 $eventer->happen('resolved2');
             }
         };
@@ -62,9 +52,8 @@ sub T0_tests {
 
     my $race = Promise::ES6->race([$p1, $p2]);
 
-    is_deeply exception {
-        diag explain( PromiseTest::await( $race, \@resolves ) );
-    }, { message => 'fail' };
+    my $value = PromiseTest::await( $race, \@resolves );
+    is $value, 2;
 
     waitpid $pid, 0;
 
@@ -73,8 +62,4 @@ sub T0_tests {
     splice @resolves if $^V lt 5.18.0;
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+done_testing();

@@ -3,21 +3,18 @@ package t::then_catch;
 use strict;
 use warnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
 use Test::More;
 use Test::FailWarnings;
 
-use parent qw(Test::Class::Tiny);
+use parent qw(Test::Class);
 
 use Promise::ES6;
 
-sub T0_then_catch {
+sub then_catch : Tests {
     my $caught;
 
     my $p = Promise::ES6->new( sub {
@@ -35,8 +32,4 @@ sub T0_then_catch {
     is( $caught, 'oops', 'caught as expected' );
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+__PACKAGE__->runtests() if !caller;

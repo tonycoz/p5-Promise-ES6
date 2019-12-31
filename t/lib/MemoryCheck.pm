@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-use Promise::ES6 ( backend => 'XS' );
+use Promise::ES6 ();
 
 use Data::Dumper;
 
@@ -24,9 +24,6 @@ BEGIN {
         }
     }
 
-    # To ensure that we’ve loaded a backend:
-    Promise::ES6->new( sub {} );
-
     my $destroy_cr = Promise::ES6->can('DESTROY');
 
     no warnings 'redefine';
@@ -43,7 +40,7 @@ BEGIN {
             $? = 1;
         }
 
-        return $destroy_cr->(@_) if $destroy_cr;
+        return $destroy_cr->(@_);
     };
 }
 

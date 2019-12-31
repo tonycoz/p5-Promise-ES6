@@ -43,6 +43,9 @@ interface. As the SYNOPSIS above shows, you can thus use patterns from
 JavaScript in Perl with only minimal changes needed to accommodate language
 syntax.
 
+This is a rewrite of an earlier module, L<Promise::Tiny>. It fixes several
+bugs and superfluous dependencies in the original.
+
 =head1 INTERFACE NOTES
 
 =over
@@ -73,20 +76,6 @@ Right now this doesn’t try for interoperability with other promise
 classes. If that’s something you want, make a feature request.
 
 See L<Promise::ES6::Future> if you need to interact with L<Future>.
-
-=head1 SPEED
-
-By default this class is pure Perl; however, applications that manage
-thousands of promises concurrently may want something faster.
-
-Toward that goal, you can B<EXPERIMENTALLY> load this class thus:
-
-    use Promise::ES6 ( backend => 'XS' );
-
-… to use L<Promise::XS> for most of the promise logic. This will confer a
-significant speed advantage.
-
-For maximum speed, though, use L<Promise::XS> directly.
 
 =head1 UNHANDLED REJECTIONS
 
@@ -125,7 +114,7 @@ I<immediately>. That means that this:
 
 This is an intentional divergence from
 L<the Promises/A+ specification|https://promisesaplus.com/#point-34>.
-An advantage of this design is that Promise::ES6 instances can abstract
+A key advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
 If you want a Promises/A+-compliant implementation, look at
@@ -220,24 +209,8 @@ L<this one|https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_p
 Promise::ES6 serves much the same role as L<Future> but exposes
 a standard, minimal, cross-language API rather than a proprietary (large) one.
 
-CPAN contains a number of other modules that implement promises. A few
-of note are:
-
-=over
-
-=item * L<Promise::XS>, L<AnyEvent::XSPromises> - XS-powered promises.
-Use one of these for maximum speed.
-
-=item * L<Promises> - Perhaps CPAN’s most widely-used promise implementation.
-
-=item * L<Mojo::Promise> - Part of L<Mojolicious>, tightly integrated to that
-package.
-
-=item * L<Promise::Tiny> - The forerunner to the present module. It
-implements the same interface but has a number of bugs that proved hard
-enough to fix that I felt a full rewrite was needed.
-
-=back
+CPAN contains a number of other modules that implement promises. I think
+mine is the nicest :), but YMMV. Enjoy!
 
 =head1 LICENSE & COPYRIGHT
 
@@ -250,20 +223,6 @@ This library is licensed under the same terms as Perl itself.
 #----------------------------------------------------------------------
 
 our $DETECT_MEMORY_LEAKS;
-
-sub new {
-    _load_backend();
-
-    *new = *_new;
-
-    return _new(@_);
-}
-
-sub import {
-    my %opts = @_[ 1 .. $#_ ];
-
-    _load_backend( $opts{'backend'} );
-}
 
 sub catch { $_[0]->then( undef, $_[1] ) }
 
@@ -297,15 +256,6 @@ sub all {
             if ($unresolved_size) {
                 my $p = 0;
 
-                my $on_reject_cr = sub {
-
-                    # Needed because we might get multiple failures:
-                    return if $settled;
-
-                    $settled = 1;
-                    $reject->(@_);
-                };
-
                 for my $promise (@promises) {
                     my $p = $p++;
 
@@ -321,7 +271,14 @@ sub all {
                             $settled = 1;
                             $resolve->( \@values );
                         },
-                        $on_reject_cr,
+                        sub {
+
+                            # Needed because we might get multiple failures:
+                            return if $settled;
+
+                            $settled = 1;
+                            $reject->(@_);
+                        },
                     );
                 }
             }
@@ -348,30 +305,29 @@ sub race {
 
     my $is_done;
 
-    my $on_resolve_cr = sub {
-        return if $is_done;
-        $is_done = 1;
-
-        $resolve->( $_[0] );
-
-        # Proactively eliminate references:
-        $resolve = $reject = undef;
-    };
-
-    my $on_reject_cr = sub {
-        return if $is_done;
-        $is_done = 1;
-
-        $reject->( $_[0] );
-
-        # Proactively eliminate references:
-        $resolve = $reject = undef;
-    };
-
     for my $promise (@promises) {
         last if $is_done;
 
-        $promise->then( $on_resolve_cr, $on_reject_cr );
+        $promise->then(
+            sub {
+                return if $is_done;
+                $is_done = 1;
+
+                $resolve->( $_[0] );
+
+                # Proactively eliminate references:
+                $resolve = $reject = undef;
+            },
+            sub {
+                return if $is_done;
+                $is_done = 1;
+
+                $reject->( $_[0] );
+
+                # Proactively eliminate references:
+                $resolve = $reject = undef;
+            }
+        );
     }
 
     return $new;
@@ -379,32 +335,25 @@ sub race {
 
 #----------------------------------------------------------------------
 
-our $BACKEND;
+my $loaded_backend;
 
-sub _load_backend {
-    my $want_backend = shift;
+BEGIN {
+    # Put this block at the end so that the backend module
+    # can override any of the above.
 
-    if ($BACKEND) {
-        if ($want_backend && $want_backend ne $BACKEND) {
-            warn( __PACKAGE__ .  ": Requested “$want_backend” backend after “$BACKEND” is already loaded!\n" );
-        }
+    return if $loaded_backend;
 
-        return;
+    $loaded_backend = 1;
+
+    # These don’t exist yet but will:
+    if (0 && !$ENV{'PROMISE_ES6_PP'} && eval { require Promise::ES6::XS }) {
+        require Promise::ES6::Backend::XS;
     }
 
-    if ($want_backend) {
-        if ($want_backend eq 'XS') {
-            require Promise::ES6::Backend::XS;
-            $BACKEND = 'XS';
-            return;
-        }
-        elsif ($want_backend ne 'PP') {
-            die( __PACKAGE__ . ": Unknown backend ($want_backend); try “XS” or “PP”.\n");
-        }
+    # Fall back to pure Perl:
+    else {
+        require Promise::ES6::Backend::PP;
     }
-
-    require Promise::ES6::Backend::PP;
-    $BACKEND = 'PP';
 }
 
 1;

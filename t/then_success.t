@@ -1,21 +1,12 @@
-#!/usr/bin/env perl
-
-package t::then_success;
-
 use strict;
 use warnings;
-
-use parent qw(Test::Class::Tiny);
 
 use Test::More;
 use Test::Fatal;
 use Test::FailWarnings;
 
-BEGIN {
-    my @path = File::Spec->splitdir( __FILE__ );
-    splice( @path, -2, 2, 'lib' );
-    push @INC, File::Spec->catdir(@path);
-}
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use MemoryCheck;
 
 use Eventer;
@@ -23,9 +14,9 @@ use PromiseTest;
 
 use Promise::ES6;
 
-sub T0_tests {
-    my $test_value = 'first';
+my $test_value = 'first';
 
+{
     my @todo;
 
     my $eventer = Eventer->new();
@@ -91,8 +82,4 @@ sub T0_tests {
     waitpid $pid, 0;
 }
 
-if (!caller) {
-    __PACKAGE__->runtests();
-}
-
-1;
+done_testing;
