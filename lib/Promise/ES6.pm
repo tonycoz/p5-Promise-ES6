@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.17';
+our $VERSION = '0.18_01';
 
 =encoding utf-8
 
@@ -143,8 +143,9 @@ to be canceled. See L<Net::Curl::Promiser> for an example of this approach.
 =back
 
 You’ll need to decide if it makes more sense for your application to leave
-a canceled query in the “pending” state or to resolve or reject it.
-All things being equal, I feel the first approach is the most intuitive.
+a canceled query in the “pending” state or to “settle” (i.e., resolve or
+reject) it. All things being equal, I feel the first approach is the most
+intuitive.
 
 =head1 MEMORY LEAKS
 
@@ -220,7 +221,7 @@ mine is the nicest :), but YMMV. Enjoy!
 
 =head1 LICENSE & COPYRIGHT
 
-Copyright 2019 Gasper Software Consulting.
+Copyright 2019-2020 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
 

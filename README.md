@@ -118,8 +118,9 @@ be some object or ID besides the promise that uniquely identifies the action
 to be canceled. See [Net::Curl::Promiser](https://metacpan.org/pod/Net::Curl::Promiser) for an example of this approach.
 
 You’ll need to decide if it makes more sense for your application to leave
-a canceled query in the “pending” state or to resolve or reject it.
-All things being equal, I feel the first approach is the most intuitive.
+a canceled query in the “pending” state or to “settle” (i.e., resolve or
+reject) it. All things being equal, I feel the first approach is the most
+intuitive.
 
 # MEMORY LEAKS
 
@@ -190,6 +191,6 @@ mine is the nicest :), but YMMV. Enjoy!
 
 # LICENSE & COPYRIGHT
 
-Copyright 2019 Gasper Software Consulting.
+Copyright 2019-2020 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
