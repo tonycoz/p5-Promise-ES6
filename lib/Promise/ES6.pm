@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.18_01';
+our $VERSION = '0.18';
 
 =encoding utf-8
 
@@ -72,8 +72,11 @@ L<indicates intent|https://www.ecma-international.org/ecma-262/6.0/#sec-promise-
 
 =head1 COMPATIBILITY
 
-Right now this doesn’t try for interoperability with other promise
-classes. If that’s something you want, make a feature request.
+Right now this doesn’t interoperate directly with other promise
+classes. If that’s something you want, make a feature request. For the
+time being, of course, you can wrap one of this module’s promises in an
+instance of whatever promise class you’re using, or vice-versa, to achieve
+interoperability.
 
 See L<Promise::ES6::Future> if you need to interact with L<Future>.
 
@@ -201,23 +204,20 @@ You may also (counterintuitively, IMO) find that this:
 
 =back
 
-=head1 TODO
-
-Currently rejections will defer until promises are resolved. This makes
-no real sense and ought to change. Do not build anything that depends on
-this behavior.
-
 =head1 SEE ALSO
 
 If you’re not sure of what promises are, there are several good
 introductions to the topic. You might start with
 L<this one|https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises>.
 
+L<Promise::XS> is a lot like this library but implemented mostly in XS for
+speed.
+
 Promise::ES6 serves much the same role as L<Future> but exposes
 a standard, minimal, cross-language API rather than a proprietary (large) one.
 
 CPAN contains a number of other modules that implement promises. I think
-mine is the nicest :), but YMMV. Enjoy!
+mine are the nicest :), but YMMV. Enjoy!
 
 =head1 LICENSE & COPYRIGHT
 
