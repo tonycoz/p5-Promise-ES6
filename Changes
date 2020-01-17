@@ -1,6 +1,6 @@
 Revision history for Perl module Promise::ES6
 
-0.18
+0.18 Thu 16 Jan 2020
 - Rejected promises no longer “repromise” their rejection values. Previously
   this module would attempt to settle a value given to a rejector callback
   in the same way as with a value given to a resolver callback; however,
