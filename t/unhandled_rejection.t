@@ -154,14 +154,10 @@ use Promise::ES6;
         sub {
             {
                 my $p = Promise::ES6->reject(789);
-diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
 
                 my $p2 = $p->catch( sub {} );
-diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
 
                 my $f = $p->finally( sub {} );
-diag explain $f;
-diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
             }
 
             cmp_deeply(
@@ -171,21 +167,25 @@ diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
             );
         },
 
+        # var p = Promise.reject(789); p.finally(() => {}); var p2 = p.catch(e => console.debug(e));
         sub {
             {
                 my $rej;
 
                 my $p = Promise::ES6->new( sub { (undef, $rej) = @_ } );
 
-                my $pf1 = $p->finally( sub {} );
-                my $pf2 = $p->finally( sub {} );
+                $p->finally( sub { } );
 
                 $p->catch( sub { } );
 
                 $rej->(1234);
-diag explain \@warnings;
             }
 
+            cmp_deeply(
+                \@warnings,
+                [ re( qr<1234> ) ],
+                'finally() shoots out a warning',
+            );
         },
     );
 

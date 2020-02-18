@@ -170,29 +170,26 @@ sub _repromise {
 #    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
 #}
 
-my ($settle_is_rejection, $settle_is_finally);
+my ($settle_is_rejection, $self_is_finally);
 
-# This method *only* runs when $self is “settled”:
+# This method *only* runs to “settle” a promise.
 sub _settle {
     my ( $self, $final_value_sr ) = @_;
 
-    if ( $settle_is_finally = $self->[_IS_FINALLY_IDX] ) {
-        $settle_is_rejection = 0;
-    }
-    else {
-        die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
+    die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
 
-        $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
+    $self_is_finally = $self->[_IS_FINALLY_IDX];
 
-        delete $_UNHANDLED_REJECTIONS{$final_value_sr} if $settle_is_rejection;
-    }
+    $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
+
+    delete $_UNHANDLED_REJECTIONS{$final_value_sr} if $settle_is_rejection;
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
     # It’s a good idea to delete the callbacks in order to trigger garbage
     # collection as soon and as reliably as possible. It’s safe to do so
     # because _settle() is only called once.
-    my $callback = $self->[ $settle_is_rejection ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
+    my $callback = $self->[ ($settle_is_rejection && !$self_is_finally) ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
 
     @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
 
@@ -208,7 +205,7 @@ sub _settle {
 
         local $@;
 
-        if ( eval { $settle_is_finally ? $callback->() : ($new_value = $callback->($$final_value_sr)); 1 } ) {
+        if ( eval { $self_is_finally ? $callback->() : ($new_value = $callback->($$final_value_sr)); 1 } ) {
 
             # The callback succeeded. If $new_value is not itself a promise,
             # then $self is now resolved. (Yay!) Note that this is true
@@ -219,8 +216,18 @@ sub _settle {
             if ( !UNIVERSAL::isa( $new_value, __PACKAGE__ ) ) {
                 $value_sr_contents_is_promise = 0;
 
-                if ($settle_is_finally) {
-                    $self->[_VALUE_SR_IDX] = $final_value_sr;
+                if ($self_is_finally) {
+
+                    # finally() is a bit weird. Assuming its callback succeeds,
+                    # it takes its parent’s resolution state. It’s important
+                    # that we make a *new* reference to the resolution value,
+                    # though, rather than merely using $final_value_sr itself,
+                    # because we need $self to have its own entry in
+                    # %_UNHANDLED_REJECTIONS.
+                    ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
+                    bless $self->[_VALUE_SR_IDX], ref $final_value_sr;
+
+                    $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX] if $settle_is_rejection;
                 }
                 else {
                     bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS;
@@ -238,7 +245,9 @@ sub _settle {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
         }
 
-        ${ $self->[_VALUE_SR_IDX] } = $settle_is_finally ? $$final_value_sr : $new_value;
+        if (!$self_is_finally) {
+            ${ $self->[_VALUE_SR_IDX] } = $new_value;
+        }
     }
     else {
 
@@ -246,7 +255,7 @@ sub _settle {
         # indicates # (i.e., resolution or rejection) is now $self’s state
         # as well.
 
-        if ($settle_is_finally) {
+        if ($self_is_finally) {
             $self->[_VALUE_SR_IDX] = $final_value_sr;
         }
         else {
