@@ -1,6 +1,8 @@
 Revision history for Perl module Promise::ES6
 
 0.19
+- Anything that has a then() method is now regarded as a promise.
+- all() and race() now correctly handle all promises’ rejections.
 - finally() now follows the ES6 specification more closely:
     * It no longer receives any arguments.
     * Its return is discarded.

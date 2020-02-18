@@ -28,6 +28,8 @@ use constant {
 # "$value_sr" => $value_sr
 our %_UNHANDLED_REJECTIONS;
 
+use constant _THEN => 'then';
+
 sub new {
     my ( $class, $cr ) = @_;
 
@@ -51,10 +53,10 @@ sub new {
         $$value_sr = $_[0];
         bless $value_sr, _RESOLUTION_CLASS();
 
-        # NB: UNIVERSAL::isa() is used in order to avoid an eval {}.
+        # NB: UNIVERSAL::can() is used in order to avoid an eval {}.
         # It is acknowledged that many Perl experts strongly discourage
         # use of this technique.
-        if ( UNIVERSAL::isa( $$value_sr, __PACKAGE__ ) ) {
+        if ( UNIVERSAL::can( $$value_sr, _THEN ) ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
@@ -213,7 +215,7 @@ sub _settle {
             # just run a successful “catch” block, so resolution is correct.
 
             # If $new_value IS a promise, though, then we have to wait.
-            if ( !UNIVERSAL::isa( $new_value, __PACKAGE__ ) ) {
+            if ( !UNIVERSAL::can( $new_value, _THEN ) ) {
                 $value_sr_contents_is_promise = 0;
 
                 if ($self_is_finally) {
@@ -263,7 +265,7 @@ sub _settle {
             ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
         }
 
-        $value_sr_contents_is_promise = UNIVERSAL::isa( $$final_value_sr, __PACKAGE__ );
+        $value_sr_contents_is_promise = UNIVERSAL::can( $$final_value_sr, _THEN );
 
         if ($settle_is_rejection) {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
