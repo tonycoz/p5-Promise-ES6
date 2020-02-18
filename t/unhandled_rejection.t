@@ -150,20 +150,25 @@ use Promise::ES6;
             );
         },
 
+        # var p = Promise.reject(789); var p2 = p.catch(e => console.debug(e)); p.finally(() => {});
         sub {
-diag "==============";
-# local $main::YES = 1;
-            my $rej;
+            {
+                my $p = Promise::ES6->reject(789);
+diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
 
-            my $p = Promise::ES6->new( sub { (undef, $rej) = @_ } );
-            my $p2 = $p->then( sub {} );
+                my $p2 = $p->catch( sub {} );
+diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
 
-            $rej->(9999);
+                my $f = $p->finally( sub {} );
+diag explain $f;
+diag explain \%Promise::ES6::_UNHANDLED_REJECTIONS;
+            }
 
-            undef $p;
-            undef $p2;
-
-diag explain \@warnings;
+            cmp_deeply(
+                \@warnings,
+                [ re( qr<789> ) ],
+                'finally() shoots out a warning',
+            );
         },
 
         sub {

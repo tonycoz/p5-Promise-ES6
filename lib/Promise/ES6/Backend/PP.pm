@@ -118,11 +118,13 @@ sub then {
 sub finally {
     my ( $self, $on_finish ) = @_;
 
+    my $value_sr = bless( \do { my $v }, _PENDING_CLASS() );
+
     my $new = bless(
         [
             $$,
             [],
-            undef,
+            $value_sr,
             $Promise::ES6::DETECT_MEMORY_LEAKS,
             $on_finish,
             undef,
@@ -182,9 +184,7 @@ sub _settle {
 
         $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
 
-        # Only needed when $settle_is_rejection, but the check would be more
-        # expensive than just always deleting. So, hey.
-        delete $_UNHANDLED_REJECTIONS{$final_value_sr};
+        delete $_UNHANDLED_REJECTIONS{$final_value_sr} if $settle_is_rejection;
     }
 
     # A promise that new() created won’t have on-settle callbacks,
@@ -219,8 +219,11 @@ sub _settle {
             if ( !UNIVERSAL::isa( $new_value, __PACKAGE__ ) ) {
                 $value_sr_contents_is_promise = 0;
 
-                if (!$settle_is_finally) {
-                    bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS();
+                if ($settle_is_finally) {
+                    $self->[_VALUE_SR_IDX] = $final_value_sr;
+                }
+                else {
+                    bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS;
                 }
             }
         }
@@ -235,9 +238,7 @@ sub _settle {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
         }
 
-        if (!$settle_is_finally) {
-            ${ $self->[_VALUE_SR_IDX] } = $new_value;
-        }
+        ${ $self->[_VALUE_SR_IDX] } = $settle_is_finally ? $$final_value_sr : $new_value;
     }
     else {
 
@@ -245,8 +246,14 @@ sub _settle {
         # indicates # (i.e., resolution or rejection) is now $self’s state
         # as well.
 
-        bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
-        ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
+        if ($settle_is_finally) {
+            $self->[_VALUE_SR_IDX] = $final_value_sr;
+        }
+        else {
+            bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
+            ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
+        }
+
         $value_sr_contents_is_promise = UNIVERSAL::isa( $$final_value_sr, __PACKAGE__ );
 
         if ($settle_is_rejection) {

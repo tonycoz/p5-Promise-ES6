@@ -1,8 +1,9 @@
 Revision history for Perl module Promise::ES6
 
 0.19
-- BREAKING CHANGE: finally() is corrected to follow the ES6 specification:
-    * finally() no longer receives an argument.
+- finally() now follows the ES6 specification more closely:
+    * It no longer receives any arguments.
+    * Its return is discarded.
     * finally()’s returned promise now duplicates the original. This means that
       unhandled rejection warnings will now fire correctly from finally().
 
