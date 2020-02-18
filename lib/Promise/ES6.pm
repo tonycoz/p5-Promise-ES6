@@ -233,8 +233,6 @@ our $DETECT_MEMORY_LEAKS;
 
 sub catch { $_[0]->then( undef, $_[1] ) }
 
-sub finally { $_[0]->then( $_[1], $_[1] ) }
-
 sub resolve {
     my ( $class, $value ) = @_;
 
@@ -273,12 +271,10 @@ sub all {
                 };
 
                 for my $promise (@promises) {
-                    last if $settled;
-
                     my $p = $p++;
 
                     $promise->then(
-                        sub {
+                        $settled ? undef : sub {
                             return if $settled;
 
                             $values[$p] = $_[0];

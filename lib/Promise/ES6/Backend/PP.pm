@@ -22,6 +22,7 @@ use constant {
     _DETECT_LEAK_IDX => 3,
     _ON_RESOLVE_IDX  => 4,
     _ON_REJECT_IDX   => 5,
+    _IS_FINALLY_IDX  => 6,
 };
 
 # "$value_sr" => $value_sr
@@ -44,8 +45,6 @@ sub new {
         $Promise::ES6::DETECT_MEMORY_LEAKS,
     ], $class;
 
-    my $suppress_unhandled_rejection_warning = 1;
-
     # NB: These MUST NOT refer to $self, or else we can get memory leaks
     # depending on how $resolver and $rejector are used.
     my $resolver = sub {
@@ -67,9 +66,7 @@ sub new {
         $$value_sr = $_[0];
         bless $value_sr, _REJECTION_CLASS();
 
-        if ( !$suppress_unhandled_rejection_warning ) {
-            $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
-        }
+        $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
 
         # We do not repromise rejections. Whatever is in $$value_sr
         # is literally what rejection callbacks receive.
@@ -85,8 +82,6 @@ sub new {
 
         $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
     }
-
-    $suppress_unhandled_rejection_warning = 0;
 
     return $self;
 }
@@ -105,6 +100,36 @@ sub then {
         $on_reject,
       ],
       ref($self);
+
+    if ( _PENDING_CLASS eq ref $self->[_VALUE_SR_IDX] ) {
+        push @{ $self->[_CHILDREN_IDX] }, $new;
+    }
+    else {
+
+        # $self might already be settled, in which case we immediately
+        # settle the $new promise as well.
+
+        $new->_settle( $self->[_VALUE_SR_IDX] );
+    }
+
+    return $new;
+}
+
+sub finally {
+    my ( $self, $on_finish ) = @_;
+
+    my $new = bless(
+        [
+            $$,
+            [],
+            undef,
+            $Promise::ES6::DETECT_MEMORY_LEAKS,
+            $on_finish,
+            undef,
+            1,  # is finally
+        ],
+        ref($self),
+    );
 
     if ( _PENDING_CLASS eq ref $self->[_VALUE_SR_IDX] ) {
         push @{ $self->[_CHILDREN_IDX] }, $new;
@@ -143,15 +168,24 @@ sub _repromise {
 #    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
 #}
 
-my $settle_is_rejection;
+my ($settle_is_rejection, $settle_is_finally);
 
 # This method *only* runs when $self is “settled”:
 sub _settle {
     my ( $self, $final_value_sr ) = @_;
 
-    die "$self already settled!" if _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX];
+    if ( $settle_is_finally = $self->[_IS_FINALLY_IDX] ) {
+        $settle_is_rejection = 0;
+    }
+    else {
+        die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
 
-    $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
+        $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
+
+        # Only needed when $settle_is_rejection, but the check would be more
+        # expensive than just always deleting. So, hey.
+        delete $_UNHANDLED_REJECTIONS{$final_value_sr};
+    }
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
@@ -162,11 +196,7 @@ sub _settle {
 
     @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
 
-    # Only needed when $settle_is_rejection, but the check would be more
-    # expensive than just always deleting. So, hey.
-    delete $_UNHANDLED_REJECTIONS{$final_value_sr};
-
-    my $value_sr_contents_is_package = 1;
+    my $value_sr_contents_is_promise = 1;
 
     if ($callback) {
 
@@ -178,7 +208,7 @@ sub _settle {
 
         local $@;
 
-        if ( eval { $new_value = $callback->($$final_value_sr); 1 } ) {
+        if ( eval { $settle_is_finally ? $callback->() : ($new_value = $callback->($$final_value_sr)); 1 } ) {
 
             # The callback succeeded. If $new_value is not itself a promise,
             # then $self is now resolved. (Yay!) Note that this is true
@@ -187,8 +217,11 @@ sub _settle {
 
             # If $new_value IS a promise, though, then we have to wait.
             if ( !UNIVERSAL::isa( $new_value, __PACKAGE__ ) ) {
-                $value_sr_contents_is_package = 0;
-                bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS();
+                $value_sr_contents_is_promise = 0;
+
+                if (!$settle_is_finally) {
+                    bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS();
+                }
             }
         }
         else {
@@ -196,13 +229,15 @@ sub _settle {
             # The callback errored, which means $self is now rejected.
 
             $new_value                    = $@;
-            $value_sr_contents_is_package = 0;
+            $value_sr_contents_is_promise = 0;
 
             bless $self->[_VALUE_SR_IDX], _REJECTION_CLASS();
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
         }
 
-        ${ $self->[_VALUE_SR_IDX] } = $new_value;
+        if (!$settle_is_finally) {
+            ${ $self->[_VALUE_SR_IDX] } = $new_value;
+        }
     }
     else {
 
@@ -212,14 +247,14 @@ sub _settle {
 
         bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
         ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
-        $value_sr_contents_is_package = UNIVERSAL::isa( $$final_value_sr, __PACKAGE__ );
+        $value_sr_contents_is_promise = UNIVERSAL::isa( $$final_value_sr, __PACKAGE__ );
 
         if ($settle_is_rejection) {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
         }
     }
 
-    if ($value_sr_contents_is_package) {
+    if ($value_sr_contents_is_promise) {
         return _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX ] );
     }
 
