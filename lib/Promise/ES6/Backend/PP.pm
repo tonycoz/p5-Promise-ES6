@@ -22,13 +22,10 @@ use constant {
     _DETECT_LEAK_IDX => 3,
     _ON_RESOLVE_IDX  => 4,
     _ON_REJECT_IDX   => 5,
-    _IS_FINALLY_IDX  => 6,
 };
 
 # "$value_sr" => $value_sr
 our %_UNHANDLED_REJECTIONS;
-
-use constant _THEN => 'then';
 
 sub new {
     my ( $class, $cr ) = @_;
@@ -56,7 +53,7 @@ sub new {
         # NB: UNIVERSAL::can() is used in order to avoid an eval {}.
         # It is acknowledged that many Perl experts strongly discourage
         # use of this technique.
-        if ( UNIVERSAL::can( $$value_sr, _THEN ) ) {
+        if ( UNIVERSAL::can( $$value_sr, 'then' ) ) {
             _repromise( $value_sr, \@children, $value_sr );
         }
         elsif (@children) {
@@ -88,6 +85,18 @@ sub new {
     return $self;
 }
 
+sub finally {
+    my ($self, $on_finish) = @_;
+
+    return ref($self)->new( sub {
+        my ($y, $n) = @_;
+
+        $on_finish->();
+
+        $self->then($y, $n);
+    } );
+}
+
 sub then {
     my ( $self, $on_resolve, $on_reject ) = @_;
 
@@ -102,38 +111,6 @@ sub then {
         $on_reject,
       ],
       ref($self);
-
-    if ( _PENDING_CLASS eq ref $self->[_VALUE_SR_IDX] ) {
-        push @{ $self->[_CHILDREN_IDX] }, $new;
-    }
-    else {
-
-        # $self might already be settled, in which case we immediately
-        # settle the $new promise as well.
-
-        $new->_settle( $self->[_VALUE_SR_IDX] );
-    }
-
-    return $new;
-}
-
-sub finally {
-    my ( $self, $on_finish ) = @_;
-
-    my $value_sr = bless( \do { my $v }, _PENDING_CLASS() );
-
-    my $new = bless(
-        [
-            $$,
-            [],
-            $value_sr,
-            $Promise::ES6::DETECT_MEMORY_LEAKS,
-            $on_finish,
-            undef,
-            1,  # is finally
-        ],
-        ref($self),
-    );
 
     if ( _PENDING_CLASS eq ref $self->[_VALUE_SR_IDX] ) {
         push @{ $self->[_CHILDREN_IDX] }, $new;
@@ -172,29 +149,31 @@ sub _repromise {
 #    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
 #}
 
-my ($settle_is_rejection, $self_is_finally);
+my $settle_is_rejection;
 
-# This method *only* runs to “settle” a promise.
+# This method *only* runs when $self is “settled”:
 sub _settle {
     my ( $self, $final_value_sr ) = @_;
 
-    die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
-
-    $self_is_finally = $self->[_IS_FINALLY_IDX];
+    die "$self already settled!" if _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX];
 
     $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
-
-    delete $_UNHANDLED_REJECTIONS{$final_value_sr} if $settle_is_rejection;
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
     # It’s a good idea to delete the callbacks in order to trigger garbage
     # collection as soon and as reliably as possible. It’s safe to do so
     # because _settle() is only called once.
-    my $callback = $self->[ ($settle_is_rejection && !$self_is_finally) ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
+    my $callback = $self->[ $settle_is_rejection ? _ON_REJECT_IDX : _ON_RESOLVE_IDX ];
 
     @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
 
+    # Only needed when $settle_is_rejection, but the check would be more
+    # expensive than just always deleting. So, hey.
+    delete $_UNHANDLED_REJECTIONS{$final_value_sr};
+
+    # In some contexts this function runs quite a lot,
+    # so caching the is-promise lookup is useful.
     my $value_sr_contents_is_promise = 1;
 
     if ($callback) {
@@ -207,7 +186,7 @@ sub _settle {
 
         local $@;
 
-        if ( eval { $self_is_finally ? $callback->() : ($new_value = $callback->($$final_value_sr)); 1 } ) {
+        if ( eval { $new_value = $callback->($$final_value_sr); 1 } ) {
 
             # The callback succeeded. If $new_value is not itself a promise,
             # then $self is now resolved. (Yay!) Note that this is true
@@ -215,25 +194,9 @@ sub _settle {
             # just run a successful “catch” block, so resolution is correct.
 
             # If $new_value IS a promise, though, then we have to wait.
-            if ( !UNIVERSAL::can( $new_value, _THEN ) ) {
+            if ( !UNIVERSAL::can( $new_value, 'then' ) ) {
                 $value_sr_contents_is_promise = 0;
-
-                if ($self_is_finally) {
-
-                    # finally() is a bit weird. Assuming its callback succeeds,
-                    # it takes its parent’s resolution state. It’s important
-                    # that we make a *new* reference to the resolution value,
-                    # though, rather than merely using $final_value_sr itself,
-                    # because we need $self to have its own entry in
-                    # %_UNHANDLED_REJECTIONS.
-                    ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
-                    bless $self->[_VALUE_SR_IDX], ref $final_value_sr;
-
-                    $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX] if $settle_is_rejection;
-                }
-                else {
-                    bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS;
-                }
+                bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS();
             }
         }
         else {
@@ -247,9 +210,7 @@ sub _settle {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
         }
 
-        if (!$self_is_finally) {
-            ${ $self->[_VALUE_SR_IDX] } = $new_value;
-        }
+        ${ $self->[_VALUE_SR_IDX] } = $new_value;
     }
     else {
 
@@ -257,15 +218,9 @@ sub _settle {
         # indicates # (i.e., resolution or rejection) is now $self’s state
         # as well.
 
-        if ($self_is_finally) {
-            $self->[_VALUE_SR_IDX] = $final_value_sr;
-        }
-        else {
-            bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
-            ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
-        }
-
-        $value_sr_contents_is_promise = UNIVERSAL::can( $$final_value_sr, _THEN );
+        bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
+        ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
+        $value_sr_contents_is_promise = UNIVERSAL::can( $$final_value_sr, 'then' );
 
         if ($settle_is_rejection) {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
