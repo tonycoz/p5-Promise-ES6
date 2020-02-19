@@ -1,13 +1,19 @@
 Revision history for Perl module Promise::ES6
 
 0.19
-- Anything that has a then() method is now regarded as a promise.
-- all() and race() now correctly handle all promises’ rejections.
-- finally() now follows the ES6 specification more closely:
-    * It no longer receives any arguments.
-    * Its return is discarded.
-    * finally()’s returned promise now duplicates the original. This means that
-      unhandled rejection warnings will now fire correctly from finally().
+- BUG FIX: all() and race() now correctly handle all promises’ rejections.
+- BREAKING CHANGE: finally() now follows the ES6 specification more closely:
+    * Its callback no longer receives any arguments.
+    * Its callback’s return is discarded.
+    * Its returned promise now duplicates the original if the callback succeeds.
+      This means that unhandled rejection warnings will now fire correctly from
+      finally().
+- Anything that has a then() method is now regarded as a promise. This allows
+  easier compatibility with other promise implementations.
+- All unresolved promises—including those resolved immediately—now prompt
+  uncaught-rejection warnings. The prior behavior of suppressing the warning
+  for immediately-rejected promises made sense under initial implementations
+  of the uncaught-rejection warning but now appears to serve no useful end.
 
 0.18 Thu 16 Jan 2020
 - Rejected promises no longer “repromise” their rejection values. Previously

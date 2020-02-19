@@ -13,19 +13,25 @@ use constant {
     _RESOLUTION_CLASS => 'Promise::ES6::_RESOLUTION',
     _REJECTION_CLASS  => 'Promise::ES6::_REJECTION',
     _PENDING_CLASS    => 'Promise::ES6::_PENDING',
+
+    _DEBUG => 0,
 };
 
 use constant {
-    _PID_IDX         => 0,
-    _CHILDREN_IDX    => 1,
-    _VALUE_SR_IDX    => 2,
-    _DETECT_LEAK_IDX => 3,
-    _ON_RESOLVE_IDX  => 4,
-    _ON_REJECT_IDX   => 5,
+    _PROMISE_ID_IDX  => 0,
+    _PID_IDX         => _DEBUG + 0,
+    _CHILDREN_IDX    => _DEBUG + 1,
+    _VALUE_SR_IDX    => _DEBUG + 2,
+    _DETECT_LEAK_IDX => _DEBUG + 3,
+    _ON_RESOLVE_IDX  => _DEBUG + 4,
+    _ON_REJECT_IDX   => _DEBUG + 5,
 };
 
 # "$value_sr" => $value_sr
 our %_UNHANDLED_REJECTIONS;
+
+my $_debug_promise_id = 0;
+sub _create_promise_id { return $_debug_promise_id++ . "-$_[0]" }
 
 sub new {
     my ( $class, $cr ) = @_;
@@ -38,11 +44,14 @@ sub new {
     my @children;
 
     my $self = bless [
+        ( _DEBUG ? undef : () ),
         $$,
         \@children,
         $value_sr,
         $Promise::ES6::DETECT_MEMORY_LEAKS,
     ], $class;
+
+    $self->[_PROMISE_ID_IDX] = _create_promise_id($self) if _DEBUG;
 
     # NB: These MUST NOT refer to $self, or else we can get memory leaks
     # depending on how $resolver and $rejector are used.
@@ -88,13 +97,25 @@ sub new {
 sub finally {
     my ($self, $on_finish) = @_;
 
-    return ref($self)->new( sub {
+    my $new;
+    $new = ref($self)->new( sub {
         my ($y, $n) = @_;
 
-        $on_finish->();
+        $self->then(
+            sub { $on_finish->(); $y->(@_) },
+            sub {
+                $on_finish->(); $n->(@_);
 
-        $self->then($y, $n);
+                # This is here to delay $new’s GC until after its rejection.
+                # That delay facilitates the unhandled-rejection warning;
+                # if $new is GCed prior to its rejection then the
+                # unhandled-rejection warning won’t fire correctly.
+                undef $new;
+            },
+        );
     } );
+
+    return $new;
 }
 
 sub then {
@@ -103,6 +124,7 @@ sub then {
     my $value_sr = bless( \do { my $v }, _PENDING_CLASS() );
 
     my $new = bless [
+        ( _DEBUG ? undef : () ),
         $$,
         [],
         $value_sr,
@@ -111,6 +133,8 @@ sub then {
         $on_reject,
       ],
       ref($self);
+
+    $new->[_PROMISE_ID_IDX] = _create_promise_id($new) if _DEBUG;
 
     if ( _PENDING_CLASS eq ref $self->[_VALUE_SR_IDX] ) {
         push @{ $self->[_CHILDREN_IDX] }, $new;
@@ -155,7 +179,7 @@ my $settle_is_rejection;
 sub _settle {
     my ( $self, $final_value_sr ) = @_;
 
-    die "$self already settled!" if _PENDING_CLASS ne ref $_[0][_VALUE_SR_IDX];
+    die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
 
     $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
 
@@ -168,9 +192,7 @@ sub _settle {
 
     @{$self}[ _ON_RESOLVE_IDX, _ON_REJECT_IDX ] = ();
 
-    # Only needed when $settle_is_rejection, but the check would be more
-    # expensive than just always deleting. So, hey.
-    delete $_UNHANDLED_REJECTIONS{$final_value_sr};
+    delete $_UNHANDLED_REJECTIONS{$final_value_sr} if $settle_is_rejection;
 
     # In some contexts this function runs quite a lot,
     # so caching the is-promise lookup is useful.
