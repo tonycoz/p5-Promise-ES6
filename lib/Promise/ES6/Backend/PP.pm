@@ -94,32 +94,16 @@ sub new {
     return $self;
 }
 
-sub finally {
-    my ($self, $on_finish) = @_;
-
-    my $new;
-    $new = ref($self)->new( sub {
-        my ($y, $n) = @_;
-
-        $self->then(
-            sub { $on_finish->(); $y->(@_) },
-            sub {
-                $on_finish->(); $n->(@_);
-
-                # This is here to delay $new’s GC until after its rejection.
-                # That delay facilitates the unhandled-rejection warning;
-                # if $new is GCed prior to its rejection then the
-                # unhandled-rejection warning won’t fire correctly.
-                undef $new;
-            },
-        );
-    } );
-
-    return $new;
+sub then {
+    return $_[0]->_then_or_finally(@_[1, 2]);
 }
 
-sub then {
-    my ( $self, $on_resolve, $on_reject ) = @_;
+sub finally {
+    return $_[0]->_then_or_finally($_[1], undef, 1);
+}
+
+sub _then_or_finally {
+    my ($self, $on_resolve_or_finish, $on_reject, $is_finally) = @_;
 
     my $value_sr = bless( \do { my $v }, _PENDING_CLASS() );
 
@@ -129,8 +113,9 @@ sub then {
         [],
         $value_sr,
         $Promise::ES6::DETECT_MEMORY_LEAKS,
-        $on_resolve,
+        $on_resolve_or_finish,
         $on_reject,
+        $is_finally,
       ],
       ref($self);
 
