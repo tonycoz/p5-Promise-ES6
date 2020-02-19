@@ -100,6 +100,11 @@ sub then {
 }
 
 sub finally {
+
+    # There’s no reason to call finally() without a callback
+    # since it would just be a no-op.
+    die 'finally() requires a callback!' if !$_[1];
+
     return $_[0]->_then_or_finally($_[1], undef, 1);
 }
 
@@ -246,14 +251,10 @@ sub _settle {
         # indicates # (i.e., resolution or rejection) is now $self’s state
         # as well.
 
-        if ($self_is_finally) {
-            $self->[_VALUE_SR_IDX] = $final_value_sr;
-        }
-        else {
-            bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
-            ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
-        }
+        # NB: We should NEVER be here if the promise is from finally().
 
+        bless $self->[_VALUE_SR_IDX], ref($final_value_sr);
+        ${ $self->[_VALUE_SR_IDX] } = $$final_value_sr;
         $value_sr_contents_is_promise = UNIVERSAL::can( $$final_value_sr, 'then' );
 
         if ($settle_is_rejection) {
