@@ -1,13 +1,16 @@
 Revision history for Perl module Promise::ES6
 
 0.19
-- BUG FIX: all() and race() now correctly handle all promises’ rejections.
-- BREAKING CHANGE: finally() now follows the ES6 specification more closely:
+- BREAKING CHANGE / BUG FIX: finally() now matches the ES6 standard better.
+  While the erstwhile differences weren’t documented, they’re salient enough
+  to be noticeable. That said, it seems unlikely that anything depended on the
+  old (useless?) behavior.
     * Its callback no longer receives any arguments.
-    * Its callback’s return is discarded.
-    * Its returned promise now duplicates the original if the callback succeeds.
-      This means that unhandled rejection warnings will now fire correctly from
-      finally().
+    * Its callback runs in void context.
+    * Its returned promise now duplicates the original if the callback
+      succeeds. This means that unhandled rejection warnings will now fire
+      correctly from finally().
+- BUG FIX: all() and race() now correctly handle all promises’ rejections.
 - Anything that has a then() method is now regarded as a promise. This allows
   easier compatibility with other promise implementations.
 - All unresolved promises—including those resolved immediately—now prompt
