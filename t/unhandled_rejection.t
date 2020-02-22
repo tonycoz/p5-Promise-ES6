@@ -185,7 +185,7 @@ use Promise::ES6;
                 \@warnings,
                 [ re( qr<1234> ) ],
                 'finally() shoots out a warning',
-            );
+            ) or diag explain \@warnings;
         },
 
         sub {
