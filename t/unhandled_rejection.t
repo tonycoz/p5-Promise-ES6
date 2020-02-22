@@ -187,6 +187,30 @@ use Promise::ES6;
                 'finally() shoots out a warning',
             );
         },
+
+        sub {
+            {
+                my $p = Promise::ES6->resolve(1)->then( sub { Promise::ES6->reject(789) } );
+            }
+
+            cmp_deeply(
+                \@warnings,
+                [ re( qr<789> ) ],
+                'then() shoots out a warning from a returned rejection',
+            );
+        },
+
+        sub {
+            {
+                my $p = Promise::ES6->resolve(1)->finally( sub { Promise::ES6->reject(789) } );
+            }
+
+            cmp_deeply(
+                \@warnings,
+                [ re( qr<789> ) ],
+                'finally() shoots out a warning from a returned rejection',
+            );
+        },
     );
 
     for my $t (@tests) {

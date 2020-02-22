@@ -158,6 +158,7 @@ sub _repromise {
         sub {
             $$value_sr = $_[0];
             bless $value_sr, _REJECTION_CLASS;
+            $_UNHANDLED_REJECTIONS{$value_sr} = $$value_sr;
             $_->_settle($value_sr) for splice @$children_ar;
         },
     );
