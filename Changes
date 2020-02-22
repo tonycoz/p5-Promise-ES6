@@ -1,9 +1,10 @@
 Revision history for Perl module Promise::ES6
 
-0.20
+0.20 Sat 22 Feb 2020
 - BREAKING CHANGE (minor): finally() callbacks now run in scalar context.
-- BUG FIX: finally() callbacks now recognize and honor rejected promises
-  as returns, as per ES6 specification.
+  (The return is ignored, though, unless you return a promise that rejects.)
+- BUG FIX: finally() callbacks now handle rejected promises as returns
+  according to the ES6 specification.
 - BUG FIX: Promises that reject because a rejected promise was returned from
   a callback will now warn if the “consequent” rejection is unhandled.
 
