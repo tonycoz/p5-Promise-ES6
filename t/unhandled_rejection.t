@@ -135,8 +135,8 @@ use Promise::ES6;
 
             is(
                 $finally_wantarray,
-                undef,
-                'finally() callback runs in void context',
+                q<>,
+                'finally() callback runs in scalar context',
             );
 
             cmp_deeply(
