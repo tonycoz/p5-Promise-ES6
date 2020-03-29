@@ -1,5 +1,10 @@
 Revision history for Perl module Promise::ES6
 
+0.21
+- BUG FIX: Exception thrown in finally() callback is now assigned as the
+  finally-promise’s rejection value. (Previously undef was assigned as the
+  rejection value.)
+
 0.20 Sat 22 Feb 2020
 - BREAKING CHANGE (minor): finally() callbacks now run in scalar context.
   (The return is ignored, though, unless you return a promise that rejects.)
