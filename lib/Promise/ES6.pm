@@ -244,7 +244,7 @@ sub reject {
 
 sub all {
     my ( $class, $iterable ) = @_;
-    my @promises = map { UNIVERSAL::isa( $_, __PACKAGE__ ) ? $_ : $class->resolve($_) } @$iterable;
+    my @promises = map { UNIVERSAL::can( $_, 'then' ) ? $_ : $class->resolve($_) } @$iterable;
 
     my @values;
 
@@ -295,7 +295,7 @@ sub all {
 
 sub race {
     my ( $class, $iterable ) = @_;
-    my @promises = map { UNIVERSAL::isa( $_, __PACKAGE__ ) ? $_ : $class->resolve($_) } @$iterable;
+    my @promises = map { UNIVERSAL::can( $_, 'then' ) ? $_ : $class->resolve($_) } @$iterable;
 
     my ( $resolve, $reject );
 
