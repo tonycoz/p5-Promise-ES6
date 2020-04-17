@@ -100,6 +100,9 @@ This is an intentional divergence from
 A key advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
+The disadvantage of this design is that recursive promises can exceed call
+stack limits.
+
 If you want a Promises/A+-compliant implementation, look at
 [Promise::ES6::IOAsync](https://metacpan.org/pod/Promise::ES6::IOAsync), [Promise::ES6::Mojo](https://metacpan.org/pod/Promise::ES6::Mojo), or
 [Promise::ES6::AnyEvent](https://metacpan.org/pod/Promise::ES6::AnyEvent) in this distribution. CPAN provides other

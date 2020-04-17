@@ -7,7 +7,7 @@ use autodie;
 use Test::More;
 use Test::FailWarnings -allow_deps => 1;
 
-use constant _TEST_COUNT => 7;
+use constant _TEST_COUNT => 8;
 
 sub _FULL_BACKEND {
     return "Promise::ES6::" . $_[0]->_BACKEND();
@@ -31,6 +31,7 @@ sub run {
         $class->_test_call_again_in_callback();
         $class->_test_die_in_then();
         $class->_test_die_in_catch();
+        $class->_test_finally_after_rejection_rejects();
     }
 }
 
@@ -218,6 +219,24 @@ sub _test_die_in_catch {
         "@things",
         "c e 123\n f",
         'catch() callback invoked asynchronously',
+    );
+}
+
+sub _test_finally_after_rejection_rejects {
+    my ($class) = @_;
+
+    my $caught;
+
+    {
+        $class->_RESOLVE(
+            $class->_FULL_BACKEND()->reject(6666)->finally( sub {} )->catch( sub { $caught = shift } )
+        );
+    }
+
+    like(
+        $caught,
+        qr<6666>,
+        'finally() rejects ',
     );
 }
 
