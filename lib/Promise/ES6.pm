@@ -243,8 +243,10 @@ sub use_event {
 
     $_EVENT = $name;
 
-    no warnings 'redefine';
-    *_postpone = "Promise::ES6::Event::$name"->can('postpone');
+    # We need to block redefinition and (for AnyEvent)
+    # prototype-mismatch warnings.
+    no warnings 'all';
+    *_postpone = "Promise::ES6::Event::$name"->can('get_postpone')->(@args);
 
     return;
 }

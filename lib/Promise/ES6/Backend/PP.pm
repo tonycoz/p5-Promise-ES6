@@ -317,7 +317,7 @@ sub DESTROY {
     if ( my $promise_value_sr = $_[0][_VALUE_SR_IDX] ) {
         if ( my $value_sr = delete $_UNHANDLED_REJECTIONS{$promise_value_sr} ) {
             my $ref = ref $_[0];
-            warn "$ref: Unhandled rejection: ($value_sr) $$value_sr";
+            warn "$ref: Unhandled rejection: $$value_sr";
         }
     }
 }

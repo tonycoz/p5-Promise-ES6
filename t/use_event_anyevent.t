@@ -26,3 +26,5 @@ sub _RESOLVE {
     $promise->finally($cv);
     $cv->recv();
 }
+
+1;

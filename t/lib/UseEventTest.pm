@@ -11,7 +11,6 @@ use Promise::ES6 ();
 
 sub _FULL_BACKEND { 'Promise::ES6' }
 
-# no-op
 sub _REQUIRE_BACKEND {
     my ($class) = @_;
 
