@@ -44,9 +44,6 @@ sub then {
 
     my $class = ref $self;
 
-    $_ &&= $class->_create_postpone_cb($_) for ($on_res, $on_rej);
-    return $self->SUPER::then($on_res, $on_rej);
-
     return $class->new( sub {
         my ($y, $n) = @_;
 
