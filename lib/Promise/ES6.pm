@@ -115,6 +115,9 @@ L<the Promises/A+ specification|https://promisesaplus.com/#point-34>.
 A key advantage of this design is that Promise::ES6 instances can abstract
 over whether a given function works synchronously or asynchronously.
 
+The disadvantage of this design is that recursive promises can exceed call
+stack limits.
+
 If you want a Promises/A+-compliant implementation, look at
 L<Promise::ES6::IOAsync>, L<Promise::ES6::Mojo>, or
 L<Promise::ES6::AnyEvent> in this distribution. CPAN provides other
@@ -227,6 +230,24 @@ This library is licensed under the same terms as Perl itself.
 #----------------------------------------------------------------------
 
 our $DETECT_MEMORY_LEAKS;
+
+sub __default_postpone { die 'NO EVENT' }
+*_postpone = \&__default_postpone;
+
+our $_EVENT;
+
+sub use_event {
+    my ($name, @args) = @_;
+
+    require "Promise/ES6/Event/$name.pm";
+
+    $_EVENT = $name;
+
+    no warnings 'redefine';
+    *_postpone = "Promise::ES6::Event::$name"->can('postpone');
+
+    return;
+}
 
 sub catch { $_[0]->then( undef, $_[1] ) }
 

@@ -34,6 +34,15 @@ our %_UNHANDLED_REJECTIONS;
 my $_debug_promise_id = 0;
 sub _create_promise_id { return $_debug_promise_id++ . "-$_[0]" }
 
+sub _create_postpone_cb {
+    my ($cr) = @_;
+
+    return sub {
+        my ($arg) = @_;
+        _postpone( sub { $cr->($arg) } );
+    },
+}
+
 sub new {
     my ( $class, $cr ) = @_;
 
@@ -76,6 +85,7 @@ sub new {
         bless $value_sr, _REJECTION_CLASS();
 
         $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
+print "add _UNHANDLED_REJECTIONS 1: $value_sr\n";
 
         # We do not repromise rejections. Whatever is in $$value_sr
         # is literally what rejection callbacks receive.
@@ -86,10 +96,12 @@ sub new {
 
     local $@;
     if ( !eval { $cr->( $resolver, $rejecter ); 1 } ) {
+print "died in constructor\n";
         $$value_sr = $@;
         bless $value_sr, _REJECTION_CLASS();
 
         $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
+print "add _UNHANDLED_REJECTIONS 2: $value_sr\n";
     }
 
     return $self;
@@ -110,6 +122,8 @@ sub finally {
 
 sub _then_or_finally {
     my ($self, $on_resolve_or_finish, $on_reject, $is_finally) = @_;
+
+    # $_ &&= _create_postpone_cb($_) for ($on_resolve_or_finish, $on_reject);
 
     my $value_sr = bless( \do { my $v }, _PENDING_CLASS() );
 
@@ -159,6 +173,7 @@ sub _repromise {
             $$value_sr = $_[0];
             bless $value_sr, _REJECTION_CLASS;
             $_UNHANDLED_REJECTIONS{$value_sr} = $value_sr;
+print "add _UNHANDLED_REJECTIONS 3: $value_sr\n";
             $_->_settle($value_sr) for splice @$children_ar;
         },
     );
@@ -179,11 +194,29 @@ sub _settle {
 
     die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
 
-    $self_is_finally = $self->[_IS_FINALLY_IDX];
-
     $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
 
+    # This has to happen up-front or else we can get spurious
+    # unhandled-rejection warnings in asynchronous mode.
     delete $_UNHANDLED_REJECTIONS{$final_value_sr} if $settle_is_rejection;
+
+    if ($Promise::ES6::_EVENT) {
+        _postpone( sub {
+            eval {
+                $self->_settle_now($final_value_sr, $settle_is_rejection);
+                1;
+            } or warn;
+        } );
+    }
+    else {
+        $self->_settle_now($final_value_sr, $settle_is_rejection);
+    }
+}
+
+sub _settle_now {
+    my ( $self, $final_value_sr, $settle_is_rejection ) = @_;
+
+    $self_is_finally = $self->[_IS_FINALLY_IDX];
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
@@ -231,6 +264,7 @@ sub _settle {
                     bless $self->[_VALUE_SR_IDX], ref $final_value_sr;
 
                     $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX] if $settle_is_rejection;
+print "add _UNHANDLED_REJECTIONS 88: " . $self->[_VALUE_SR_IDX] . $/  if $settle_is_rejection;
                 }
                 else {
                     bless $self->[_VALUE_SR_IDX], _RESOLUTION_CLASS;
@@ -247,6 +281,7 @@ sub _settle {
 
             bless $self->[_VALUE_SR_IDX], _REJECTION_CLASS();
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
+print "add _UNHANDLED_REJECTIONS 89: " . $self->[_VALUE_SR_IDX] . $/;
         }
 
         if (!$self_is_finally || $value_sr_contents_is_promise || ($self_is_finally && $callback_failed)) {
@@ -267,6 +302,7 @@ sub _settle {
 
         if ($settle_is_rejection) {
             $_UNHANDLED_REJECTIONS{ $self->[_VALUE_SR_IDX] } = $self->[_VALUE_SR_IDX];
+print "add _UNHANDLED_REJECTIONS 11: " . $self->[_VALUE_SR_IDX] . $/;
         }
     }
 
@@ -299,7 +335,7 @@ sub DESTROY {
     if ( my $promise_value_sr = $_[0][_VALUE_SR_IDX] ) {
         if ( my $value_sr = delete $_UNHANDLED_REJECTIONS{$promise_value_sr} ) {
             my $ref = ref $_[0];
-            warn "$ref: Unhandled rejection: $$value_sr";
+            warn "$ref: Unhandled rejection: ($value_sr) $$value_sr";
         }
     }
 }

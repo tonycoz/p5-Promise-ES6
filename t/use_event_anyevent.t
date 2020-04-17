@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-package t::anyevent;
+package t::use_event_anyevent;
 
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use autodie;
 use FindBin;
 use lib "$FindBin::Bin/lib";
 
-use parent qw( EventTest );
+use parent qw( UseEventTest );
 
 __PACKAGE__->run();
 
@@ -23,6 +23,6 @@ sub _RESOLVE {
     my ($class, $promise) = @_;
 
     my $cv = AnyEvent->condvar();
-    $promise->catch( sub {} )->finally($cv);
+    $promise->finally($cv);
     $cv->recv();
 }
