@@ -18,9 +18,7 @@ __PACKAGE__->run();
 use constant _BACKEND => 'IOAsync';
 
 sub _REQUIRE_BACKEND {
-    my ($class) = @_;
-
-    Promise::ES6::use_event( 'IOAsync', $LOOP );
+    Promise::ES6::use_event( 'IO::Async', $LOOP );
 }
 
 sub _REQUIRE {

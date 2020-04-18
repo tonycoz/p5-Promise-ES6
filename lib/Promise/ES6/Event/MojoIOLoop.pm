@@ -1,4 +1,4 @@
-package Promise::ES6::Event::Mojolicious;
+package Promise::ES6::Event::MojoIOLoop;
 
 use strict;
 use warnings;

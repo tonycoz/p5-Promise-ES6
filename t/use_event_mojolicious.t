@@ -13,7 +13,7 @@ use parent qw( UseEventTest );
 
 __PACKAGE__->run();
 
-use constant _BACKEND => 'Mojolicious';
+use constant _BACKEND => 'Mojo::IOLoop';
 
 sub _REQUIRE {
     require Mojo::IOLoop;

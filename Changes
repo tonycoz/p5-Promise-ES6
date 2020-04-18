@@ -4,6 +4,7 @@ Revision history for Perl module Promise::ES6
 - Promise::ES6 can now “transparently” work in asynchronous mode via the
   new use_event() function. The old separate classes will eventually be
   deprecated.
+- allSettled() method is added.
 
 0.21 Sun 29 Mar 2020
 - BUG FIX: all() and race() now recognize all “then()”-able objects (not

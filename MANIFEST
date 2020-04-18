@@ -1,5 +1,3 @@
-.gitignore
-.travis.yml
 Changes
 LICENSE
 MANIFEST
@@ -10,13 +8,14 @@ lib/Promise/ES6/AnyEvent.pm
 lib/Promise/ES6/Backend/PP.pm
 lib/Promise/ES6/Event/AnyEvent.pm
 lib/Promise/ES6/Event/IOAsync.pm
-lib/Promise/ES6/Event/Mojolicious.pm
+lib/Promise/ES6/Event/MojoIOLoop.pm
 lib/Promise/ES6/EventLoopBase.pm
 lib/Promise/ES6/Future.pm
 lib/Promise/ES6/IOAsync.pm
 lib/Promise/ES6/Mojo.pm
 t/all.t
 t/all_async.t
+t/allsettled.t
 t/anyevent.t
 t/await.t
 t/await_then_with_async.t

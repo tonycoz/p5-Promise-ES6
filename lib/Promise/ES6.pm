@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22_01';
 
 =encoding utf-8
 
@@ -12,6 +12,11 @@ our $VERSION = '0.21';
 Promise::ES6 - ES6-style promises in Perl
 
 =head1 SYNOPSIS
+
+    use Promise::ES6;
+
+    # OPTIONAL. And see below for other options.
+    Promise::ES6::use_event('IO::Async', $loop);
 
     my $promise = Promise::ES6->new( sub {
         my ($resolve_cr, $reject_cr) = @_;
@@ -31,6 +36,8 @@ Promise::ES6 - ES6-style promises in Perl
     my $all_promise = Promise::ES6->all( \@promises );
 
     my $race_promise = Promise::ES6->race( \@promises );
+
+    my $allsettled_promise = Promise::ES6->allSettled( \@promises );
 
 =head1 DESCRIPTION
 
@@ -89,7 +96,7 @@ This module’s handling of unhandled rejections has changed over time.
 The current behavior is: if any rejected promise is DESTROYed without first
 having received a catch callback, a warning is thrown.
 
-=head1 SYNCHRONOUS OPERATION
+=head1 SYNCHRONOUS VS. ASYNCHRONOUS OPERATION
 
 In JavaScript, the following …
 
@@ -100,28 +107,52 @@ In JavaScript, the following …
 of its callbacks until the end of the current iteration through JavaScript’s
 event loop.
 
-Perl, of course, has no built-in event loop. This module’s C<then()> method,
-thus, when called on a promise that is already
-“settled” (i.e., not pending), will run the appropriate callback
-I<immediately>. That means that this:
+Perl, of course, has no built-in event loop. This module accommodates that by
+implementing B<synchronous> promises by default rather than asynchronous ones.
+This means that all promise callbacks run I<immediately> rather than between
+iterations of an event loop. As a result, this:
 
     Promise::ES6->resolve(0)->then( sub { print 1 } );
     print 2;
 
 … will print C<12> instead of C<21>.
 
-This is an intentional divergence from
-L<the Promises/A+ specification|https://promisesaplus.com/#point-34>.
-A key advantage of this design is that Promise::ES6 instances can abstract
-over whether a given function works synchronously or asynchronously.
+Besides the convenience of event-interface agnosticism, synchronous promises
+confer the potentially-useful benefit of abstracting over whether a given
+function works synchronously or asynchronously.
 
-The disadvantage of this design is that recursive promises can exceed call
-stack limits.
+The disadvantage of synchronous promises—besides not being I<quite> the same
+promises that we expect from JS—is that recursive promises can exceed
+call stack limits. To avoid that problem, you’ll need asynchronous promises.
+First, choose one of the following event interfaces:
 
-If you want a Promises/A+-compliant implementation, look at
-L<Promise::ES6::IOAsync>, L<Promise::ES6::Mojo>, or
-L<Promise::ES6::AnyEvent> in this distribution. CPAN provides other
-alternatives.
+=over
+
+=item * L<IO::Async>
+
+=item * L<AnyEvent>
+
+=item * L<Mojo::IOLoop> (part of L<Mojolicious>)
+
+=back
+
+Then, before you start creating promises, do this:
+
+    Promise::ES6::use_event('AnyEvent');
+
+… or:
+
+    Promise::ES6::use_event('Mojo::IOLoop');
+
+… or:
+
+    Promise::ES6::use_event('IO::Async', $loop);
+
+That’s it! Promise::ES6 instances will now work asynchronously rather than
+synchronously.
+
+B<IMPORTANT:> For the best long-term scalability and flexibility,
+write code that works with either synchronous or asynchronous promises.
 
 =head1 CANCELLATION
 
@@ -210,11 +241,12 @@ introductions to the topic. You might start with
 L<this one|https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises>.
 
 L<Promise::XS> is a lot like this library but implemented mostly in XS for
-speed. It derives from L<AnyEvent::XSPromises>.
+speed. I refactored it from L<AnyEvent::XSPromises>.
 
 L<Promises> is another pure-Perl Promise implementation.
 
-L<Future> fills a role similar to that of promises.
+L<Future> fills a role similar to that of promises. Much of the IO::Async
+ecosystem assumes (or strongly encourages) its use.
 
 CPAN contains a number of other modules that implement promises. I think
 mine are the nicest :), but YMMV. Enjoy!
@@ -239,14 +271,17 @@ our $_EVENT;
 sub use_event {
     my ($name, @args) = @_;
 
-    require "Promise/ES6/Event/$name.pm";
+    my $modname = $name;
+    $modname =~ tr<:><>d;
+
+    require "Promise/ES6/Event/$modname.pm";
 
     $_EVENT = $name;
 
     # We need to block redefinition and (for AnyEvent)
     # prototype-mismatch warnings.
     no warnings 'all';
-    *_postpone = "Promise::ES6::Event::$name"->can('get_postpone')->(@args);
+    *_postpone = "Promise::ES6::Event::$modname"->can('get_postpone')->(@args);
 
     return;
 }
@@ -357,6 +392,19 @@ sub race {
     }
 
     return $new;
+}
+
+sub allSettled {
+    my ( $class, $iterable ) = @_;
+
+    my @promises = map { UNIVERSAL::can( $_, 'then' ) ? $_ : $class->resolve($_) } @$iterable;
+
+    return $class->all( [ map {
+        $_->then(
+            sub { { status => 'fulfilled', value => $_[0] } },
+            sub { { status => 'rejected', reason => $_[0] } },
+        );
+    } @promises ] )
 }
 
 #----------------------------------------------------------------------
