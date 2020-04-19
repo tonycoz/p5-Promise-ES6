@@ -1,6 +1,8 @@
 Revision history for Perl module Promise::ES6
 
 0.22
+- BUG FIX: Resolve callbacks now properly defer propagation when an
+  unfulfilled promise is given as the resolution value.
 - Promise::ES6 can now “transparently” work in asynchronous mode via the
   new use_event() function. The old separate classes will eventually be
   deprecated.

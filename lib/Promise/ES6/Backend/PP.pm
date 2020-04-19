@@ -58,15 +58,17 @@ sub new {
     # depending on how $resolver and $rejector are used.
     my $resolver = sub {
         $$value_sr = $_[0];
-        bless $value_sr, _RESOLUTION_CLASS();
 
         # NB: UNIVERSAL::can() is used in order to avoid an eval {}.
         # It is acknowledged that many Perl experts strongly discourage
         # use of this technique.
         if ( UNIVERSAL::can( $$value_sr, 'then' ) ) {
-            _repromise( $value_sr, \@children, $value_sr );
+            return _repromise( $value_sr, \@children, $value_sr );
         }
-        elsif (@children) {
+
+        bless $value_sr, _RESOLUTION_CLASS();
+
+        if (@children) {
             $_->_settle($value_sr) for splice @children;
         }
     };
