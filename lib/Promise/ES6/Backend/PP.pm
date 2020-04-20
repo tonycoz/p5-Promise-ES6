@@ -304,7 +304,7 @@ sub _settle_now {
 }
 
 sub DESTROY {
-    return if $$ != $_[0][_PID_IDX];
+    return unless $_[0][_PID_IDX] && $$ == $_[0][_PID_IDX];
 
     if ( $_[0][_DETECT_LEAK_IDX] && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT' ) {
         warn( ( '=' x 70 ) . "\n" . 'XXXXXX - ' . ref( $_[0] ) . " survived until global destruction; memory leak likely!\n" . ( "=" x 70 ) . "\n" );
