@@ -187,10 +187,7 @@ sub _settle {
 
     if ($Promise::ES6::_EVENT) {
         _postpone( sub {
-            eval {
-                $self->_settle_now($final_value_sr, $settle_is_rejection);
-                1;
-            } or warn;
+            $self->_settle_now($final_value_sr, $settle_is_rejection);
         } );
     }
     else {

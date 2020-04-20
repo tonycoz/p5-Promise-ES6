@@ -420,17 +420,26 @@ sub race {
     return $new;
 }
 
+sub _aS_fulfilled {
+    return { status => 'fulfilled', value => $_[0] };
+}
+
+sub _aS_rejected {
+    return { status => 'rejected', reason => $_[0] };
+}
+
+sub _aS_map {
+    return $_->then( \&_aS_fulfilled, \&_aS_rejected );
+}
+
 sub allSettled {
     my ( $class, $iterable ) = @_;
 
     my @promises = map { UNIVERSAL::can( $_, 'then' ) ? $_ : $class->resolve($_) } @$iterable;
 
-    return $class->all( [ map {
-        $_->then(
-            sub { { status => 'fulfilled', value => $_[0] } },
-            sub { { status => 'rejected', reason => $_[0] } },
-        );
-    } @promises ] )
+    @promises = map( _aS_map, @promises );
+
+    return $class->all( \@promises );
 }
 
 #----------------------------------------------------------------------

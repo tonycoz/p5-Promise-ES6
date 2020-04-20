@@ -89,8 +89,7 @@ In JavaScript, the following …
     console.log(2);
 
 … will log `2` then `1` because JavaScript’s `then()` defers execution
-of its callbacks until the end of the current iteration through JavaScript’s
-event loop.
+of its callbacks until between iterations through JavaScript’s event loop.
 
 Perl, of course, has no built-in event loop. This module accommodates that by
 implementing **synchronous** promises by default rather than asynchronous ones.
@@ -124,10 +123,10 @@ call stack limits. For example, the following (admittedly contrived) code:
 
 … will eventually fail because it will reach Perl’s call stack size limit.
 
-That problem probably won’t matter in most applications. If you want to
-avoid it, though, you’ll need asynchronous promises.
+That problem probably won’t affect most applications. The best way to
+avoid it, though, is to use asynchronous promises, à la JavaScript.
 
-To do that, first, choose one of the following event interfaces:
+To do that, first choose one of the following event interfaces:
 
 - [IO::Async](https://metacpan.org/pod/IO::Async)
 - [AnyEvent](https://metacpan.org/pod/AnyEvent)
@@ -147,6 +146,11 @@ Then, before you start creating promises, do this:
 
 That’s it! Promise::ES6 instances will now work asynchronously rather than
 synchronously.
+
+Note that this changes Promise::ES6 _globally_. In IO::Async’s case, it
+won’t increase the passed-in [IO::Async::Loop](https://metacpan.org/pod/IO::Async::Loop) instance’s reference count,
+but if that loop object goes away, Promise::ES6 won’t work until you call
+`use_event()` again.
 
 **IMPORTANT:** For the best long-term scalability and flexibility,
 your code should work with either synchronous or asynchronous promises.
@@ -169,7 +173,7 @@ to be canceled. See [Net::Curl::Promiser](https://metacpan.org/pod/Net::Curl::Pr
 You’ll need to decide if it makes more sense for your application to leave
 a canceled query in the “pending” state or to “settle” (i.e., resolve or
 reject) it. All things being equal, I feel the first approach is the most
-intuitive.
+intuitive, while the latter ends up being “cleaner”.
 
 # MEMORY LEAKS
 
@@ -227,8 +231,8 @@ If you’re not sure of what promises are, there are several good
 introductions to the topic. You might start with
 [this one](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises).
 
-[Promise::XS](https://metacpan.org/pod/Promise::XS) is a lot like this library but implemented mostly in XS for
-speed. I refactored it from [AnyEvent::XSPromises](https://metacpan.org/pod/AnyEvent::XSPromises).
+[Promise::XS](https://metacpan.org/pod/Promise::XS) is my refactor of [AnyEvent::XSPromises](https://metacpan.org/pod/AnyEvent::XSPromises). It’s a lot like
+this library but implemented mostly in XS for speed.
 
 [Promises](https://metacpan.org/pod/Promises) is another pure-Perl Promise implementation.
 
