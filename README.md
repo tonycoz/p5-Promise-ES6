@@ -102,14 +102,32 @@ iterations of an event loop. As a result, this:
 
 … will print `12` instead of `21`.
 
-Besides the convenience of event-interface agnosticism, synchronous promises
-confer the potentially-useful benefit of abstracting over whether a given
+One effect of this is that Promise::ES6, in its default configuration, is
+agnostic regarding event loop interfaces: no special configuration is needed
+for any specific event loop. In fact, you don’t even _need_ an event loop
+at all, which might be useful for abstracting over whether a given
 function works synchronously or asynchronously.
 
 The disadvantage of synchronous promises—besides not being _quite_ the same
 promises that we expect from JS—is that recursive promises can exceed
-call stack limits. To avoid that problem, you’ll need asynchronous promises.
-First, choose one of the following event interfaces:
+call stack limits. For example, the following (admittedly contrived) code:
+
+    my @nums = 1 .. 1000;
+
+    sub _remove {
+        if (@nums) {
+            Promise::ES6->resolve(shift @nums)->then(\&_remove);
+        }
+    }
+
+    _remove();
+
+… will eventually fail because it will reach Perl’s call stack size limit.
+
+That problem probably won’t matter in most applications. If you want to
+avoid it, though, you’ll need asynchronous promises.
+
+To do that, first, choose one of the following event interfaces:
 
 - [IO::Async](https://metacpan.org/pod/IO::Async)
 - [AnyEvent](https://metacpan.org/pod/AnyEvent)
@@ -131,7 +149,7 @@ That’s it! Promise::ES6 instances will now work asynchronously rather than
 synchronously.
 
 **IMPORTANT:** For the best long-term scalability and flexibility,
-write code that works with either synchronous or asynchronous promises.
+your code should work with either synchronous or asynchronous promises.
 
 # CANCELLATION
 

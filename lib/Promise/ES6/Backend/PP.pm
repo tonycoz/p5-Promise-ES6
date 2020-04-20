@@ -173,15 +173,13 @@ sub _repromise {
 #    return (_PENDING_CLASS ne ref $_[0][ _VALUE_SR_IDX ]);
 #}
 
-my ($settle_is_rejection, $self_is_finally);
-
 # This method *only* runs to “settle” a promise.
 sub _settle {
     my ( $self, $final_value_sr ) = @_;
 
     die "$self already settled!" if _PENDING_CLASS ne ref $self->[_VALUE_SR_IDX];
 
-    $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
+    my $settle_is_rejection = _REJECTION_CLASS eq ref $final_value_sr;
 
     # This has to happen up-front or else we can get spurious
     # unhandled-rejection warnings in asynchronous mode.
@@ -203,7 +201,7 @@ sub _settle {
 sub _settle_now {
     my ( $self, $final_value_sr, $settle_is_rejection ) = @_;
 
-    $self_is_finally = $self->[_IS_FINALLY_IDX];
+    my $self_is_finally = $self->[_IS_FINALLY_IDX];
 
     # A promise that new() created won’t have on-settle callbacks,
     # but a promise that came from then/catch/finally will.
@@ -301,8 +299,7 @@ sub _settle_now {
 
         return _repromise( @{$self}[ _VALUE_SR_IDX, _CHILDREN_IDX, _VALUE_SR_IDX, _IS_FINALLY_IDX ] );
     }
-
-    if ( @{ $self->[_CHILDREN_IDX] } ) {
+    elsif ( @{ $self->[_CHILDREN_IDX] } ) {
         $_->_settle( $self->[_VALUE_SR_IDX] ) for splice @{ $self->[_CHILDREN_IDX] };
     }
 
@@ -316,10 +313,10 @@ sub DESTROY {
         warn( ( '=' x 70 ) . "\n" . 'XXXXXX - ' . ref( $_[0] ) . " survived until global destruction; memory leak likely!\n" . ( "=" x 70 ) . "\n" );
     }
 
-    if ( my $promise_value_sr = $_[0][_VALUE_SR_IDX] ) {
+    if ( defined $_[0][_VALUE_SR_IDX] ) {
+        my $promise_value_sr = $_[0][_VALUE_SR_IDX];
         if ( my $value_sr = delete $_UNHANDLED_REJECTIONS{$promise_value_sr} ) {
-            my $ref = ref $_[0];
-            warn "$ref: Unhandled rejection: $$value_sr";
+            warn "$_[0]: Unhandled rejection: $$value_sr";
         }
     }
 }
