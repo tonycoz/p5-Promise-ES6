@@ -304,6 +304,8 @@ sub _settle_now {
 }
 
 sub DESTROY {
+
+    # The PID should always be there, but this accommodates mocks.
     return unless $_[0][_PID_IDX] && $$ == $_[0][_PID_IDX];
 
     if ( $_[0][_DETECT_LEAK_IDX] && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT' ) {
