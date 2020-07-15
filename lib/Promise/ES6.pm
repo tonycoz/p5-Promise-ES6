@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.23_01';
+our $VERSION = '0.23';
 
 =encoding utf-8
 
@@ -67,6 +67,9 @@ not a list.
 
 =item * Unhandled rejections are reported via C<warn()>. (See below
 for details.)
+
+=item * Undefined or empty rejection values trigger a warning.
+This provides the same value as Perl’s own warning on C<die(undef)>.
 
 =item * The L<Promises/A+ test suite|https://github.com/promises-aplus/promises-tests> avoids testing the case where an “executor”
 function’s resolve callback itself receives another promise, e.g.:
