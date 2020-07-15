@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.22';
+our $VERSION = '0.23_01';
 
 =encoding utf-8
 
@@ -321,9 +321,9 @@ sub resolve {
 }
 
 sub reject {
-    my ( $class, $reason ) = @_;
+    my ( $class, @reason ) = @_;
 
-    $class->new( sub { $_[1]->($reason) } );
+    $class->new( sub { $_[1]->(@reason) } );
 }
 
 sub all {

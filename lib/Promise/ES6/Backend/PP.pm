@@ -74,6 +74,20 @@ sub new {
     };
 
     my $rejecter = sub {
+        if (!defined $_[0]) {
+            my $msg;
+
+            if (@_) {
+                $msg = "$class: Uninitialized rejection value given";
+            }
+            else {
+                $msg = "$class: No rejection value given";
+            }
+
+            require Carp;
+            Carp::carp($msg);
+        }
+
         $$value_sr = $_[0];
         bless $value_sr, _REJECTION_CLASS();
 
