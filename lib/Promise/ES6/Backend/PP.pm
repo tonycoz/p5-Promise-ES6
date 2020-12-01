@@ -334,4 +334,53 @@ sub DESTROY {
     }
 }
 
+#----------------------------------------------------------------------
+
+# Future::AsyncAwait::Awaitable interface:
+
+sub AWAIT_NEW_DONE {
+    (ref($_[0]) || $_[0])->resolve( $_[1] );
+}
+
+sub AWAIT_NEW_FAIL {
+    (ref($_[0]) || $_[0])->reject( $_[1] );
+}
+
+sub AWAIT_CLONE {
+    (ref $_[0])->new(\&_noop);
+}
+
+sub AWAIT_DONE {
+    my $copy = $_[1];
+
+    $_[0]->_settle(bless \$copy, _RESOLUTION_CLASS);
+}
+
+sub AWAIT_FAIL {
+    my $copy = $_[1];
+
+    $_[0]->_settle(bless \$copy, _REJECTION_CLASS);
+}
+
+sub AWAIT_IS_READY {
+    !UNIVERSAL::isa( $_[0]->[_VALUE_SR_IDX], _PENDING_CLASS );
+}
+
+sub AWAIT_IS_CANCELLED { 0 }
+
+sub AWAIT_GET {
+    return ${ $_[0]->[_VALUE_SR_IDX] } if UNIVERSAL::isa( $_[0]->[_VALUE_SR_IDX], _RESOLUTION_CLASS );
+
+    die ${ $_[0]->[_VALUE_SR_IDX] };
+}
+
+sub _noop {}
+
+sub AWAIT_ON_READY {
+    $_[0]->finally($_[1])->catch(\&noop);
+}
+
+sub AWAIT_CHAIN_CANCEL { }
+sub AWAIT_ON_CANCEL { }
+
 1;

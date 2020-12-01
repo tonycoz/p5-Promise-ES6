@@ -3,6 +3,8 @@ LICENSE
 MANIFEST
 Makefile.PL
 README.md
+await.pl
+await_simple.pl
 lib/Promise/ES6.pm
 lib/Promise/ES6/AnyEvent.pm
 lib/Promise/ES6/Backend/PP.pm
@@ -17,6 +19,7 @@ t/all.t
 t/all_async.t
 t/allsettled.t
 t/anyevent.t
+t/async_await.t
 t/await.t
 t/await_then_with_async.t
 t/await_with_async.t
