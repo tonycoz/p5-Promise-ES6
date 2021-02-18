@@ -14,6 +14,26 @@ BEGIN {
     eval 'use Test::Future::AsyncAwait::Awaitable; 1' or $failed_why = $@;
 }
 
+if (!$failed_why) {
+    my $backend;
+
+    my @backends = ('AnyEvent', 'IO::Async', 'Mojolicious');
+
+    for my $try (@backends) {
+        if (eval "require $try") {
+            $backend = $try;
+            last;
+        }
+    }
+
+    if ($backend) {
+        Promise::ES6::use_event($backend);
+    }
+    else {
+        $failed_why = "No event interface (@backends) is available.";
+    }
+}
+
 plan skip_all => "Can’t run test: $failed_why" if $failed_why;
 
 use Promise::ES6;

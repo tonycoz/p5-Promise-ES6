@@ -93,6 +93,32 @@ Future is not compatible with promises.
 
 (See L<Promise::ES6::Future> for more tools to interact with L<Future>.)
 
+=head1 B<EXPERIMENTAL:> ASYNC/AWAIT SUPPORT
+
+This module implements L<Future::AsyncAwait::Awaitable>. For now it only
+works in asynchronous mode (see below). This lets you do nifty stuff like:
+
+    use Future::AsyncAwait future_class => 'Promise::ES6';
+
+    async sub do_stuff {
+        my $foo = await fetch_number_p();
+
+        # NB: The real return is a promise that provides this value:
+        return 1 + $foo;
+    }
+
+    my $one_plus_number = await do_stuff();
+
+… which roughly equates to:
+
+    sub do_stuff {
+        return fetch_number_p()->then( sub { 1 + $foo } );
+    }
+
+    do_stuff->then( sub {
+        $one_plus_number = shift;
+    } );
+
 =head1 UNHANDLED REJECTIONS
 
 This module’s handling of unhandled rejections has changed over time.

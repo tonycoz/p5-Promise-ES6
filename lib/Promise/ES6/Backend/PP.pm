@@ -26,6 +26,8 @@ use constant {
     _ON_RESOLVE_IDX  => _DEBUG + 4,
     _ON_REJECT_IDX   => _DEBUG + 5,
     _IS_FINALLY_IDX  => _DEBUG + 6,
+
+    _ASYNC_AWAIT_NEEDS_EVENT => __PACKAGE__ . '’s async/await support requires asyncrhonous operation!',
 };
 
 # "$value_sr" => $value_sr
@@ -339,37 +341,54 @@ sub DESTROY {
 # Future::AsyncAwait::Awaitable interface:
 
 sub AWAIT_NEW_DONE {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     (ref($_[0]) || $_[0])->resolve( $_[1] );
 }
 
 sub AWAIT_NEW_FAIL {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     (ref($_[0]) || $_[0])->reject( $_[1] );
 }
 
 sub AWAIT_CLONE {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     (ref $_[0])->new(\&_noop);
 }
 
 sub AWAIT_DONE {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     my $copy = $_[1];
 
     $_[0]->_settle(bless \$copy, _RESOLUTION_CLASS);
 }
 
 sub AWAIT_FAIL {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     my $copy = $_[1];
 
     $_[0]->_settle(bless \$copy, _REJECTION_CLASS);
 }
 
 sub AWAIT_IS_READY {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     !UNIVERSAL::isa( $_[0]->[_VALUE_SR_IDX], _PENDING_CLASS );
 }
 
 sub AWAIT_IS_CANCELLED { 0 }
 
 sub AWAIT_GET {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     return ${ $_[0]->[_VALUE_SR_IDX] } if UNIVERSAL::isa( $_[0]->[_VALUE_SR_IDX], _RESOLUTION_CLASS );
+
+use Data::Dumper;
+print STDERR Dumper $_[0];
 
     die ${ $_[0]->[_VALUE_SR_IDX] };
 }
@@ -377,6 +396,8 @@ sub AWAIT_GET {
 sub _noop {}
 
 sub AWAIT_ON_READY {
+    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
+
     $_[0]->finally($_[1])->catch(\&noop);
 }
 
