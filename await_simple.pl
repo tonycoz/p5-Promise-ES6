@@ -7,6 +7,9 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use Promise::ES6;
 
+use AnyEvent;
+Promise::ES6::use_event('AnyEvent');
+
 use Time::HiRes;
 
 #use blib "$FindBin::Bin/Future-AsyncAwait-0.47";
@@ -25,6 +28,8 @@ do_await($p)->then( sub { print "got " . shift . $/ } );
 
 Time::HiRes::sleep(0.1);
 
+print "====before last resolve\n";
 $resolver_cr->(5);
+print "====after last resolve\n";
 
 1;
