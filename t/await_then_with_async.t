@@ -58,6 +58,9 @@ diag "MASTER PID: $$";
     isa_ok $promise, 'Promise::ES6';
     is PromiseTest::await($promise, \@checkers), 123 * 2;
 
+    # For pre-5.18 perls:
+    @checkers = ();
+
     waitpid $pid, 0;
 }
 

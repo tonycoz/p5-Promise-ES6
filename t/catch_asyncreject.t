@@ -38,6 +38,9 @@ my $pid = fork or do {
 
 is PromiseTest::await($p, \@checkers), 'oh my god!';
 
+# For pre-5.18 perls:
+@checkers = ();
+
 waitpid $pid, 0;
 
 done_testing();

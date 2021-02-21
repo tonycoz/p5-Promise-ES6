@@ -4,7 +4,10 @@ Revision history for Perl module Promise::ES6
 - Added EXPERIMENTAL async/await support via Future::AsyncAwait.
 - Certain weird methods for stashing references within callback chains
   no longer work. (They don’t work in other promise implementations, either.)
-- Fix tests under Devel::Cover.
+- Pre-5.18 perls may encounter more memory leaks due to a rewrite of the
+  internals. In tests I fixed these by manually clearing arrays that held
+  references to the promise. This doesn’t seem to be a problem in 5.18+.
+- Tests now work under Devel::Cover.
 
 0.23 Wed 15 July 2020
 - Undefined or missing rejection values now trigger a warning.

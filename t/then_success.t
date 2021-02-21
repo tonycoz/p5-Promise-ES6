@@ -15,6 +15,7 @@ use PromiseTest;
 use Promise::ES6;
 
 my $test_value = 'first';
+diag "PID: $$";
 
 {
     my @todo;
@@ -78,6 +79,9 @@ my $test_value = 'first';
     };
 
     is( PromiseTest::await($p3, \@todo), 'third resolve' );
+
+    # For pre-5.18 perls:
+    @todo = ();
 
     waitpid $pid, 0;
 }
