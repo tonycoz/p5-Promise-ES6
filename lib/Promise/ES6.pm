@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24_01';
 
 =encoding utf-8
 
@@ -304,7 +304,7 @@ mine are the nicest :), but YMMV. Enjoy!
 
 =head1 LICENSE & COPYRIGHT
 
-Copyright 2019-2020 Gasper Software Consulting.
+Copyright 2019-2021 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
 
@@ -342,6 +342,27 @@ sub use_event {
 }
 
 sub catch { $_[0]->then( undef, $_[1] ) }
+
+sub finally {
+    my ($self, $on_end) = @_;
+
+    my $class = ref $self;
+
+    return $self->then(
+        sub {
+            my $val = $_[0];
+
+            $class->resolve( scalar $on_end->() )->then( sub { $val } );
+        },
+        sub {
+            my @errs = @_;
+
+            $class->resolve( scalar $on_end->() )->then(
+                sub { $class->reject(@errs) },
+            );
+        },
+    );
+}
 
 sub resolve {
     my ( $class, $value ) = @_;
@@ -472,6 +493,7 @@ sub allSettled {
 }
 
 #----------------------------------------------------------------------
+# The stuff that’s specific to this specific implementation:
 
 sub new {
     my ($class, $cb) = @_;
@@ -535,26 +557,6 @@ sub then {
     $self->_propagate() if exists $self->{'_result'};
 
     return $new;
-}
-
-sub finally {
-    my ($self, $on_end) = @_;
-
-    my $class = ref $self;
-
-    return $self->then(
-        sub {
-            my $val = $_[0];
-            $class->resolve(scalar $on_end->())->then( sub { $val } );
-        },
-        sub {
-            my $err = $_[0];
-
-            $class->resolve( scalar $on_end->() )->then(
-                sub { $class->reject($err) },
-            );
-        },
-    );
 }
 
 sub _resolve {
@@ -625,7 +627,6 @@ sub _propagate {
 }
 
 sub DESTROY {
-
     return if $_[0]{'handled'};
 
     # The PID should always be there, but this accommodates mocks.
@@ -639,6 +640,8 @@ sub DESTROY {
         _carp("$_[0]: Unhandled rejection: $_[0]{'_result'}");
     }
 }
+
+#----------------------------------------------------------------------
 
 sub _carp {
     unshift @_, 'carp';
