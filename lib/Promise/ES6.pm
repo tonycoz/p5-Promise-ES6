@@ -41,6 +41,12 @@ Promise::ES6 - ES6-style promises in Perl
 
 =head1 DESCRIPTION
 
+=begin html
+
+<a href='https://coveralls.io/github/FGasper/p5-Promise-ES6?branch=master'><img src='https://coveralls.io/repos/github/FGasper/p5-Promise-ES6/badge.svg?branch=master' alt='Coverage Status' /></a>
+
+=end html
+
 This module provides a Perl implementation of L<promises|https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises>, a useful pattern
 for coordinating asynchronous tasks.
 
