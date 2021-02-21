@@ -1,6 +1,11 @@
 Revision history for Perl module Promise::ES6
 
 0.24
+- BREAKING CHANGE: Due to a rewrite of the internals, promises no longer
+  hold their own callbacks; the parent promise holds them instead. This
+  invalidates certain weird-ish methods for stashing references within
+  callback chains.
+- Added EXPERIMENTAL async/await support via Future::AsyncAwait.
 - Fix tests under Devel::Cover.
 
 0.23 Wed 15 July 2020

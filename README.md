@@ -77,6 +77,32 @@ Future is not compatible with promises.
 
 (See [Promise::ES6::Future](https://metacpan.org/pod/Promise::ES6::Future) for more tools to interact with [Future](https://metacpan.org/pod/Future).)
 
+# **EXPERIMENTAL:** ASYNC/AWAIT SUPPORT
+
+This module implements [Future::AsyncAwait::Awaitable](https://metacpan.org/pod/Future::AsyncAwait::Awaitable). For now it only
+works in asynchronous mode (see below). This lets you do nifty stuff like:
+
+    use Future::AsyncAwait future_class => 'Promise::ES6';
+
+    async sub do_stuff {
+        my $foo = await fetch_number_p();
+
+        # NB: The real return is a promise that provides this value:
+        return 1 + $foo;
+    }
+
+    my $one_plus_number = await do_stuff();
+
+… which roughly equates to:
+
+    sub do_stuff {
+        return fetch_number_p()->then( sub { 1 + $foo } );
+    }
+
+    do_stuff->then( sub {
+        $one_plus_number = shift;
+    } );
+
 # UNHANDLED REJECTIONS
 
 This module’s handling of unhandled rejections has changed over time.

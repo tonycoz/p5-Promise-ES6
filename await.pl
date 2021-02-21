@@ -9,7 +9,7 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use Promise::ES6;
 
-use blib "$FindBin::Bin/Future-AsyncAwait-0.47";
+#use blib "$FindBin::Bin/Future-AsyncAwait-0.47";
 
 use Future::AsyncAwait future_class => 'Promise::ES6';
 

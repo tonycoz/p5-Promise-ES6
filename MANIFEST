@@ -7,7 +7,6 @@ await.pl
 await_simple.pl
 lib/Promise/ES6.pm
 lib/Promise/ES6/AnyEvent.pm
-lib/Promise/ES6/Backend/PP.pm
 lib/Promise/ES6/Event/AnyEvent.pm
 lib/Promise/ES6/Event/IOAsync.pm
 lib/Promise/ES6/Event/MojoIOLoop.pm
