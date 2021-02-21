@@ -17,6 +17,7 @@ t/all_async.t
 t/allsettled.t
 t/anyevent.t
 t/async_await.t
+t/async_await_hold_ref.t
 t/await.t
 t/await_then_with_async.t
 t/await_with_async.t

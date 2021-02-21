@@ -95,16 +95,13 @@ Future is not compatible with promises.
 
 =head1 B<EXPERIMENTAL:> ASYNC/AWAIT SUPPORT
 
-This module implements L<Future::AsyncAwait::Awaitable>. For now it only
-works in asynchronous mode (see below). This lets you do nifty stuff like:
+This module implements L<Future::AsyncAwait::Awaitable>.
+Once you load L<Future::AsyncAwait> this lets you do nifty stuff like:
 
     use Future::AsyncAwait future_class => 'Promise::ES6';
 
     async sub do_stuff {
-        my $foo = await fetch_number_p();
-
-        # NB: The real return is a promise that provides this value:
-        return 1 + $foo;
+        return 1 + await fetch_number_p();
     }
 
     my $one_plus_number = await do_stuff();
