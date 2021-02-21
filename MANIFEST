@@ -27,6 +27,7 @@ t/finally.t
 t/future.t
 t/global_destruction.t
 t/ioasync.t
+t/lib/AsyncAwait.pm
 t/lib/EventTest.pm
 t/lib/Eventer.pm
 t/lib/MemoryCheck.pm
