@@ -3,8 +3,6 @@ LICENSE
 MANIFEST
 Makefile.PL
 README.md
-await.pl
-await_simple.pl
 lib/Promise/ES6.pm
 lib/Promise/ES6/AnyEvent.pm
 lib/Promise/ES6/Event/AnyEvent.pm

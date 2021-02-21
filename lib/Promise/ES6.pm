@@ -668,8 +668,6 @@ sub _do_carp {
 
 # Future::AsyncAwait::Awaitable interface:
 
-use constant _ASYNC_AWAIT_NEEDS_EVENT => 'async/await compatibility requires an event loop.';
-
 # Future::AsyncAwait doesn’t retain a strong reference to its created
 # promises, as a result of which we need to create a self-reference
 # inside the promise. We’ll clear that self-reference once the promise
@@ -684,43 +682,29 @@ sub _immortalize {
 }
 
 sub AWAIT_NEW_DONE {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     _immortalize('resolve', (ref($_[0]) || $_[0]), $_[1] );
 }
 
 sub AWAIT_NEW_FAIL {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     _immortalize('reject', (ref($_[0]) || $_[0]), $_[1] );
 }
 
 sub AWAIT_CLONE {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     _immortalize('new', ref $_[0], \&_noop);
 }
 
 sub AWAIT_DONE {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     &_resolve;
 }
 sub AWAIT_FAIL {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     &_reject;
 }
 
 sub AWAIT_IS_READY {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     exists $_[0]->{'_result'};
 }
 
 sub AWAIT_GET {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     return $_[0]{'_result'} if $_[0]{'_success'};
 
     die $_[0]{'_result'};
@@ -729,8 +713,6 @@ sub AWAIT_GET {
 sub _noop {}
 
 sub AWAIT_ON_READY {
-    die _ASYNC_AWAIT_NEEDS_EVENT if !$Promise::ES6::_EVENT;
-
     $_[0]{'_on_ready'} = $_[1];
 }
 
