@@ -676,6 +676,9 @@ sub _do_carp {
 # inside the promise. We’ll clear that self-reference once the promise
 # is finished, which avoids memory leaks.
 #
+# (F::AA behaves as it does because Future.pm retains “back-references”
+# rather than the “forward references” we use here.)
+#
 sub _immortalize {
     my $method = $_[0];
 
@@ -708,6 +711,8 @@ sub AWAIT_IS_READY {
 }
 
 sub AWAIT_GET {
+    $_[0]{'handled'} = 1;
+
     return $_[0]{'_result'} if $_[0]{'_success'};
 
     die $_[0]{'_result'};
