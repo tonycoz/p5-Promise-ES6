@@ -699,12 +699,8 @@ sub AWAIT_CLONE {
     _immortalize('new', ref $_[0], \&_noop);
 }
 
-sub AWAIT_DONE {
-    &_resolve;
-}
-sub AWAIT_FAIL {
-    &_reject;
-}
+*AWAIT_DONE = *_resolve;
+*AWAIT_FAIL = *_reject;
 
 sub AWAIT_IS_READY {
     exists $_[0]->{'_result'};
