@@ -102,9 +102,12 @@ Future is not compatible with promises.
 =head1 B<EXPERIMENTAL:> ASYNC/AWAIT SUPPORT
 
 This module implements L<Future::AsyncAwait::Awaitable>.
-Once you load L<Future::AsyncAwait> this lets you do nifty stuff like:
+That means it I<should> work with code blocks where L<Future::AsyncAwait>’s
+C<async> and C<await> keywords are set up.
 
-    use Future::AsyncAwait future_class => 'Promise::ES6';
+This lets you do nifty stuff like:
+
+    use Promise::AsyncAwait;
 
     async sub do_stuff {
         return 1 + await fetch_number_p();
