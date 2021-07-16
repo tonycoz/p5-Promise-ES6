@@ -104,6 +104,8 @@ sub reject_promise : Tests(2) {
 
     is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
 
+    undef $p2;
+
     return;
 }
 
