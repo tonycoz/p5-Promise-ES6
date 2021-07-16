@@ -40,6 +40,8 @@ jobs:
         run: perl Makefile.PL
       - name: make
         run: make
+      - name: tests
+        run: prove -wlvmb t/reject.t
       - name: Run tests (with coverage)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

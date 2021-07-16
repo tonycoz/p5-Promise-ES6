@@ -59,5 +59,7 @@ jobs:
         run: perl Makefile.PL
       - name: make
         run: make
+      - name: tests
+        run: prove -wlvmb t/async_await_additional.t
       - name: Run Tests
         run: make test

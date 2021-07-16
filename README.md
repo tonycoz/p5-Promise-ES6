@@ -278,6 +278,6 @@ mine are the nicest :), but YMMV. Enjoy!
 
 # LICENSE & COPYRIGHT
 
-Copyright 2019-2020 Gasper Software Consulting.
+Copyright 2019-2021 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
