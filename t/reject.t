@@ -88,26 +88,27 @@ sub reject_nothing_via_callback : Tests(2) {
 }
 
 sub reject_promise : Tests(2) {
-
-    # Devel::Cover causes memory leaks here.
-    no warnings 'redefine';
-    local *Promise::ES6::DESTROY = sub { } if $INC{'Devel/Cover.pm'};
+    my ($self) = @_;
 
     my $p2 = Promise::ES6->resolve(123);
 
-    my $reason;
+  SKIP: {
+        skip 'Devel::Cover causes memory leaks here.', $self->num_tests() if $INC{'Devel/Cover.pm'};
 
-    Promise::ES6->reject($p2)->catch( sub {
-        $reason = shift;
-    } );
+        my $reason;
 
-    is( $reason, $p2, 'reject() - promise as rejection is literal rejection value' );
+        Promise::ES6->reject($p2)->catch( sub {
+            $reason = shift;
+        } );
 
-    Promise::ES6->new( sub { $_[1]->($p2) } )->catch( sub {
-        $reason = shift;
-    } );
+        is( $reason, $p2, 'reject() - promise as rejection is literal rejection value' );
 
-    is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
+        Promise::ES6->new( sub { $_[1]->($p2) } )->catch( sub {
+            $reason = shift;
+        } );
+
+        is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
+    }
 
     return;
 }
