@@ -20,6 +20,8 @@ sub reject : Tests(1) {
         my ($reason) = @_;
         is $reason, 'oh my god';
     });
+
+    return;
 }
 
 sub reject_undef : Tests(2) {
@@ -97,6 +99,8 @@ sub reject_promise : Tests(2) {
         my $reason = shift;
         is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
     } );
+
+    return;
 }
 
 __PACKAGE__->runtests;

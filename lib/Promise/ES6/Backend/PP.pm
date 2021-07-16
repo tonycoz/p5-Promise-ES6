@@ -396,7 +396,7 @@ sub AWAIT_IS_READY {
     !UNIVERSAL::isa( $_[0]->[_VALUE_SR_IDX], _PENDING_CLASS );
 }
 
-use constant AWAIT_IS_CANCELLED => 0;
+sub AWAIT_IS_CANCELLED { 0 };
 
 sub AWAIT_GET {
     delete $_UNHANDLED_REJECTIONS{$_[0]->[_VALUE_SR_IDX]};
@@ -406,7 +406,6 @@ sub AWAIT_GET {
     die ${ $_[0]->[_VALUE_SR_IDX] };
 }
 
-#use constant _noop => ();
 sub _noop {}
 
 sub AWAIT_ON_READY {
