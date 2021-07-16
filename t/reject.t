@@ -72,35 +72,39 @@ sub reject_undef_via_callback : Tests(2) {
 
     cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
 }
-#
-#sub reject_nothing_via_callback : Tests(2) {
-#    my @warnings;
-#
-#    local $SIG{'__WARN__'} = sub { push @warnings, @_ };
-#
-#    Promise::ES6->new( sub { $_[1]->(undef) } )->catch( sub {
-#        my @args= @_;
-#
-#        is_deeply( \@args, [undef], 'undef given to reject callback' );
-#    } );
-#
-#    cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
-#}
-#
-#sub reject_promise : Tests(2) {
-#    my $p2 = Promise::ES6->resolve(123);
-#
-#    Promise::ES6->reject($p2)->catch( sub {
-#        my $reason = shift;
-#        is( $reason, $p2, 'reject() - promise as rejection is literal rejection value' );
-#    } );
-#
-#    Promise::ES6->new( sub { $_[1]->($p2) } )->catch( sub {
-#        my $reason = shift;
-#        is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
-#    } );
-#
-#    return;
-#}
+
+sub reject_nothing_via_callback : Tests(2) {
+    my @warnings;
+
+    local $SIG{'__WARN__'} = sub { push @warnings, @_ };
+
+    Promise::ES6->new( sub { $_[1]->(undef) } )->catch( sub {
+        my @args= @_;
+
+        is_deeply( \@args, [undef], 'undef given to reject callback' );
+    } );
+
+    cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
+}
+
+sub reject_promise : Tests(2) {
+    my $p2 = Promise::ES6->resolve(123);
+
+    my $reason;
+
+    Promise::ES6->reject($p2)->catch( sub {
+        $reason = shift;
+    } );
+
+    is( $reason, $p2, 'reject() - promise as rejection is literal rejection value' );
+
+    Promise::ES6->new( sub { $_[1]->($p2) } )->catch( sub {
+        $reason = shift;
+    } );
+
+    is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
+
+    return;
+}
 
 __PACKAGE__->runtests;
