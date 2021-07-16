@@ -87,7 +87,7 @@ sub reject_nothing_via_callback : Tests(2) {
     cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
 }
 
-sub reject_promise : Tests(1) {
+sub reject_promise : Tests(2) {
 
     # Devel::Cover causes memory leaks here.
     local $Promise::ES6::DETECT_MEMORY_LEAKS = 0 if $INC{'Devel/Cover.pm'};
