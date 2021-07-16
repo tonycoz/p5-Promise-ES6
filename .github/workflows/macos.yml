@@ -33,15 +33,13 @@ jobs:
       - name: Install Mojolicious (optional)
         run: "curl -L https://cpanmin.us | perl - --notest Mojolicious ||:"
       - name: Install Future::AsyncAwait (optional)
-        run: "cpanm --notest Future::AsyncAwait ||:"
+        run: "curl -L https://cpanmin.us | perl - --notest Future::AsyncAwait ||:"
       - name: Install Dependencies
         run: curl -L https://cpanmin.us | perl - --notest --installdeps .
       - name: perl Makefile.PL
         run: perl Makefile.PL
       - name: make
         run: make
-      - name: tests
-        run: prove -wlvmb t/reject.t
       - name: Run tests (with coverage)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

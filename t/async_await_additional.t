@@ -12,6 +12,10 @@ use Test::Deep;
 
 use parent 'Test::Class';
 
+if ($^V lt v5.24.0) {
+    plan skip_all => 'https://rt.cpan.org/Public/Bug/Display.html?id=137723';
+}
+
 BEGIN {
     for my $req ( qw( Future::AsyncAwait  AnyEvent ) ) {
         eval "require $req" or plan skip_all => "No $req";
@@ -47,7 +51,9 @@ async sub thethings {
 }
 
 async sub reject_nonono {
-    await delay(0.01)->then( sub { die 'nonono' } );
+    my $p1 = delay(0.01);
+    my $p2 = $p1->then( sub { die 'nonono' } );
+    await $p2;
 
     die 'I should not get here.';
 }
