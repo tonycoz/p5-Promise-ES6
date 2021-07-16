@@ -90,7 +90,8 @@ sub reject_nothing_via_callback : Tests(2) {
 sub reject_promise : Tests(2) {
 
     # Devel::Cover causes memory leaks here.
-    local $Promise::ES6::DETECT_MEMORY_LEAKS = 0 if $INC{'Devel/Cover.pm'};
+    no warnings 'redefine';
+    local *Promise::ES6::DESTROY = sub { } if $INC{'Devel/Cover.pm'};
 
     my $p2 = Promise::ES6->resolve(123);
 
