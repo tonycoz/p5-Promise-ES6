@@ -45,20 +45,20 @@ sub reject_undef : Tests(2) {
     ], 'warning happens' );
 }
 
-#sub reject_nothing : Tests(2) {
-#    my @warnings;
-#
-#    local $SIG{'__WARN__'} = sub { push @warnings, @_ };
-#
-#    Promise::ES6->reject()->catch( sub {
-#        my @args= @_;
-#
-#        is_deeply( \@args, [undef], 'undef given to reject callback' );
-#    } );
-#
-#    cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
-#}
-#
+sub reject_nothing : Tests(2) {
+    my @warnings;
+
+    local $SIG{'__WARN__'} = sub { push @warnings, @_ };
+
+    Promise::ES6->reject()->catch( sub {
+        my @args= @_;
+
+        is_deeply( \@args, [undef], 'undef given to reject callback' );
+    } );
+
+    cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
+}
+
 #sub reject_undef_via_callback : Tests(2) {
 #    my @warnings;
 #
