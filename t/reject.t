@@ -87,7 +87,7 @@ sub reject_nothing_via_callback : Tests(2) {
     cmp_deeply( \@warnings, [ re( qr<.> ) ], 'warning happens' );
 }
 
-sub reject_promise : Tests(2) {
+sub reject_promise : Tests(1) {
     my $p2 = Promise::ES6->resolve(123);
 
     my $reason;
@@ -98,13 +98,14 @@ sub reject_promise : Tests(2) {
 
     is( $reason, $p2, 'reject() - promise as rejection is literal rejection value' );
 
-    Promise::ES6->new( sub { $_[1]->($p2) } )->catch( sub {
-        $reason = shift;
-    } );
-
-    is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
-
+#    Promise::ES6->new( sub { $_[1]->($p2) } )->catch( sub {
+#        $reason = shift;
+#    } );
+#
+#    is( $reason, $p2, 'callback - promise as rejection is literal rejection value' );
+#
     undef $p2;
+    undef $reason;
 
     return;
 }
