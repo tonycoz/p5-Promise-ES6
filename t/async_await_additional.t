@@ -20,7 +20,7 @@ BEGIN {
 
 use Promise::ES6;
 
-use Future::AsyncAwait;
+use Future::AsyncAwait future_class => 'Promise::ES6';
 
 __PACKAGE__->new()->runtests() if !caller;
 
