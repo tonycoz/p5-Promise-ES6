@@ -5,6 +5,7 @@ Makefile.PL
 README.md
 lib/Promise/ES6.pm
 lib/Promise/ES6/AnyEvent.pm
+lib/Promise/ES6/Backend/PP.pm
 lib/Promise/ES6/Event/AnyEvent.pm
 lib/Promise/ES6/Event/IOAsync.pm
 lib/Promise/ES6/Event/MojoIOLoop.pm
@@ -18,6 +19,7 @@ t/allsettled.t
 t/anyevent.t
 t/async_await.t
 t/async_await_additional.t
+t/async_await_sync.t
 t/await.t
 t/await_then_with_async.t
 t/await_with_async.t

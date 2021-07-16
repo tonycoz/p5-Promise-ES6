@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+package t::async_await_additional;
+
 use strict;
 use warnings;
 
@@ -18,7 +20,7 @@ BEGIN {
 
 use Promise::ES6;
 
-use Future::AsyncAwait future_class => 'Promise::ES6';
+use Future::AsyncAwait;
 
 __PACKAGE__->new()->runtests() if !caller;
 

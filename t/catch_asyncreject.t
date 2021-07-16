@@ -38,7 +38,7 @@ my $pid = fork or do {
 
 is PromiseTest::await($p, \@checkers), 'oh my god!';
 
-# For pre-5.18 perls:
+# To avoid a leak in Devel::Cover:
 @checkers = ();
 
 waitpid $pid, 0;

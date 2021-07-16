@@ -74,7 +74,7 @@ isa_ok $promise, 'Promise::ES6';
 is PromiseTest::await($promise, \@checkers), 123, 'get resolved value';
 is PromiseTest::await($promise2, \@checkers), 456, 'get resolved value from returned sub-promise';
 
-# To avoid a leak in pre-5.18:
+# To avoid a leak in Devel::Cover:
 @checkers = ();
 
 waitpid $pid, 0;

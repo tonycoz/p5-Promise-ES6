@@ -19,11 +19,7 @@ my $p = do {
     Promise::ES6->new( sub { } )->finally( sub { $d } );
 };
 
-TODO: {
-    local $TODO = 'Acceptable breakage to have async/await.';
-
-    is( $destroyed, 0, 'promise is alive: reference isn’t reaped' );
-}
+is( $destroyed, 0, 'promise is alive: reference isn’t reaped' );
 
 undef $p;
 

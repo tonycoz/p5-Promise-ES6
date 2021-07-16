@@ -83,16 +83,16 @@ Future is not compatible with promises.
 
 # **EXPERIMENTAL:** ASYNC/AWAIT SUPPORT
 
-This module implements [Future::AsyncAwait::Awaitable](https://metacpan.org/pod/Future::AsyncAwait::Awaitable).
-That means it _should_ work with code blocks where [Future::AsyncAwait](https://metacpan.org/pod/Future::AsyncAwait)’s
-`async` and `await` keywords are set up.
+This module implements [Future::AsyncAwait::Awaitable](https://metacpan.org/pod/Future::AsyncAwait::Awaitable). This lets you do
+nifty stuff like:
 
-This lets you do nifty stuff like:
-
-    use Promise::AsyncAwait;
+    use Future::AsyncAwait;
 
     async sub do_stuff {
-        return 1 + await fetch_number_p();
+        my $foo = await fetch_number_p();
+
+        # NB: The real return is a promise that provides this value:
+        return 1 + $foo;
     }
 
     my $one_plus_number = await do_stuff();
@@ -207,6 +207,8 @@ a canceled query in the “pending” state or to “settle” (i.e., resolve or
 reject) it. All things being equal, I feel the first approach is the most
 intuitive, while the latter ends up being “cleaner”.
 
+Of note: [Future](https://metacpan.org/pod/Future) implements native cancellation.
+
 # MEMORY LEAKS
 
 It’s easy to create inadvertent memory leaks using promises in Perl.
@@ -276,6 +278,6 @@ mine are the nicest :), but YMMV. Enjoy!
 
 # LICENSE & COPYRIGHT
 
-Copyright 2019-2021 Gasper Software Consulting.
+Copyright 2019-2020 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.

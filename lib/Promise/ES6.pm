@@ -3,7 +3,7 @@ package Promise::ES6;
 use strict;
 use warnings;
 
-our $VERSION = '0.24_03';
+our $VERSION = '0.24_04';
 
 =encoding utf-8
 
@@ -101,16 +101,16 @@ Future is not compatible with promises.
 
 =head1 B<EXPERIMENTAL:> ASYNC/AWAIT SUPPORT
 
-This module implements L<Future::AsyncAwait::Awaitable>.
-That means it I<should> work with code blocks where L<Future::AsyncAwait>’s
-C<async> and C<await> keywords are set up.
+This module implements L<Future::AsyncAwait::Awaitable>. This lets you do
+nifty stuff like:
 
-This lets you do nifty stuff like:
-
-    use Promise::AsyncAwait;
+    use Future::AsyncAwait;
 
     async sub do_stuff {
-        return 1 + await fetch_number_p();
+        my $foo = await fetch_number_p();
+
+        # NB: The real return is a promise that provides this value:
+        return 1 + $foo;
     }
 
     my $one_plus_number = await do_stuff();
@@ -236,6 +236,8 @@ a canceled query in the “pending” state or to “settle” (i.e., resolve or
 reject) it. All things being equal, I feel the first approach is the most
 intuitive, while the latter ends up being “cleaner”.
 
+Of note: L<Future> implements native cancellation.
+
 =head1 MEMORY LEAKS
 
 It’s easy to create inadvertent memory leaks using promises in Perl.
@@ -310,7 +312,7 @@ mine are the nicest :), but YMMV. Enjoy!
 
 =head1 LICENSE & COPYRIGHT
 
-Copyright 2019-2021 Gasper Software Consulting.
+Copyright 2019-2020 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
 
@@ -348,27 +350,6 @@ sub use_event {
 }
 
 sub catch { $_[0]->then( undef, $_[1] ) }
-
-sub finally {
-    my ($self, $on_end) = @_;
-
-    my $class = ref $self;
-
-    return $self->then(
-        sub {
-            my $val = $_[0];
-
-            $class->resolve( scalar $on_end->() )->then( sub { $val } );
-        },
-        sub {
-            my @errs = @_;
-
-            $class->resolve( scalar $on_end->() )->then(
-                sub { $class->reject(@errs) },
-            );
-        },
-    );
-}
 
 sub resolve {
     my ( $class, $value ) = @_;
@@ -499,232 +480,26 @@ sub allSettled {
 }
 
 #----------------------------------------------------------------------
-# The stuff that’s specific to this specific implementation:
 
-sub new {
-    my ($class, $cb) = @_;
+my $loaded_backend;
 
-    _confess('need callback') if !$cb;
+BEGIN {
+    # Put this block at the end so that the backend module
+    # can override any of the above.
 
-    my $self = bless { _pid => $$, _detect_leak => $Promise::ES6::DETECT_MEMORY_LEAKS }, $class;
+    return if $loaded_backend;
 
-    local $@;
-    eval { $cb->(
-        sub { $self->_resolve($_[0]) },
-        sub { $self->_reject(@_) },
-    ); 1 } or $self->_reject($@);
+    $loaded_backend = 1;
 
-    return $self;
-}
-
-sub then {
-    my ($self, $on_res, $on_rej) = @_;
-
-    $self->{'handled'} = 1;
-
-    my $new = bless { _pid => $$, _detect_leak => $Promise::ES6::DETECT_MEMORY_LEAKS }, ref($self);
-
-    push @{ $self->{'on_res'} }, sub {
-        if ($on_res) {
-            my $val;
-
-            local $@;
-
-            if ( eval { $val = $on_res->($_[0]); 1 } ) {
-                $new->_resolve($val);
-            }
-            else {
-                $new->_reject($@);
-            }
-        }
-        else {
-            $new->_resolve($_[0]);
-        }
-    };
-
-    push @{ $self->{'on_rej'} }, sub {
-        my $val;
-
-        if ($on_rej) {
-            local $@;
-
-            if ( eval { $val = $on_rej->($_[0]); 1 } ) {
-                $new->_resolve($val);
-            }
-            else {
-                $new->_reject($@);
-            }
-        }
-        else {
-            $new->_reject(@_);
-        }
-    };
-
-    $self->_propagate() if exists $self->{'_result'};
-
-    return $new;
-}
-
-sub _resolve {
-    my ($self, $value) = @_;
-
-    if (UNIVERSAL::can($value, 'then')) {
-        $value->then(
-            sub { $self->_resolve($_[0]) },
-            sub { $self->_reject(@_) },
-        );
+    # These don’t exist yet but will:
+    if (0 && !$ENV{'PROMISE_ES6_PP'} && eval { require Promise::ES6::XS }) {
+        require Promise::ES6::Backend::XS;
     }
+
+    # Fall back to pure Perl:
     else {
-        $self->{'_result'} = $value;
-        $self->{'_success'} = 1;
-
-        $self->_propagate();
-    }
-
-    return;
-}
-
-sub _reject {
-    my ($self, @values) = @_;
-
-    if (!defined $values[0]) {
-        my $class = ref $self;
-
-        my $msg;
-
-        if (@values) {
-            $msg = "$class: Uninitialized rejection value given";
-        }
-        else {
-            $msg = "$class: No rejection value given";
-        }
-
-        _carp($msg);
-    }
-
-    $self->{'_result'} = $values[0];
-
-    $self->_propagate();
-
-    return;
-}
-
-sub _propagate {
-    my ($self) = @_;
-
-    $self->{'_on_ready'}->() if $self->{'_on_ready'};
-
-    my $cbs_ar = $self->{'_success'} ? $self->{'on_res'} : $self->{'on_rej'};
-
-    @{$self}{'_selfref', 'on_res', 'on_rej'} = (undef, [], []);
-
-    if ($cbs_ar) {
-        if ($_EVENT) {
-            _postpone( sub {
-                $_->( $self->{'_result'} ) for @$cbs_ar;
-            } );
-        }
-        else {
-            $_->( $self->{'_result'} ) for @$cbs_ar;
-        }
-    }
-
-    return;
-}
-
-sub DESTROY {
-    return if $_[0]{'handled'};
-
-    # The PID should always be there, but this accommodates mocks.
-    return unless $_[0]{'_pid'} && $$ == $_[0]{'_pid'};
-
-    if ( $_[0]{_detect_leak} && ${^GLOBAL_PHASE} && ${^GLOBAL_PHASE} eq 'DESTRUCT' ) {
-        _carp( ( '=' x 70 ) . "\n" . 'XXXXXX - ' . ref( $_[0] ) . " survived until global destruction; memory leak likely!\n" . ( "=" x 70 ) . "\n" );
-    }
-
-    if ( exists $_[0]{'_result'} && !$_[0]{'_success'} ) {
-        _carp("$_[0]: Unhandled rejection: $_[0]{'_result'}");
+        require Promise::ES6::Backend::PP;
     }
 }
-
-#----------------------------------------------------------------------
-
-sub _carp {
-    unshift @_, 'carp';
-    &_do_carp;
-}
-
-sub _confess {
-    unshift @_, 'confess';
-    &_do_carp;
-}
-
-sub _do_carp {
-    my ($fn, $msg) = @_;
-
-    local ($@, $!);
-    require Carp;
-
-    local $Carp::Internal{ (__PACKAGE__) } = 1;
-
-    Carp->can($fn)->($msg);
-}
-
-#----------------------------------------------------------------------
-
-# Future::AsyncAwait::Awaitable interface:
-
-# Future::AsyncAwait doesn’t retain a strong reference to its created
-# promises, as a result of which we need to create a self-reference
-# inside the promise. We’ll clear that self-reference once the promise
-# is finished, which avoids memory leaks.
-#
-# (F::AA behaves as it does because Future.pm retains “back-references”
-# rather than the “forward references” we use here.)
-#
-sub _immortalize {
-    my $method = $_[0];
-
-    my $new = $_[1]->$method(@_[2 .. $#_]);
-
-    $new->{'_selfref'} = $new;
-}
-
-sub AWAIT_NEW_DONE {
-    _immortalize('resolve', (ref($_[0]) || $_[0]), $_[1] );
-}
-
-sub AWAIT_NEW_FAIL {
-    _immortalize('reject', (ref($_[0]) || $_[0]), $_[1] );
-}
-
-sub AWAIT_CLONE {
-    _immortalize('new', ref $_[0], \&_noop);
-}
-
-*AWAIT_DONE = *_resolve;
-*AWAIT_FAIL = *_reject;
-
-sub AWAIT_IS_READY {
-    exists $_[0]->{'_result'};
-}
-
-sub AWAIT_GET {
-    $_[0]{'handled'} = 1;
-
-    return $_[0]{'_result'} if $_[0]{'_success'};
-
-    die $_[0]{'_result'};
-}
-
-sub _noop {}
-
-sub AWAIT_ON_READY {
-    $_[0]{'_on_ready'} = $_[1];
-}
-
-*AWAIT_CHAIN_CANCEL = *_noop;
-*AWAIT_ON_CANCEL = *_noop;
-*AWAIT_IS_CANCELLED = *_noop;
 
 1;
