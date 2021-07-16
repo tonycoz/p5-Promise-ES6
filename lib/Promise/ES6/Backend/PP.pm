@@ -30,7 +30,6 @@ use constant {
     # For async/await:
     _ON_READY_IMMEDIATE_IDX => _DEBUG + 7,
     _SELF_REF_IDX => _DEBUG + 8,
-    _ASYNC_AWAIT_NEEDS_EVENT => __PACKAGE__ . '’s async/await support requires asyncrhonous operation!',
 };
 
 # "$value_sr" => $value_sr
@@ -396,7 +395,7 @@ sub AWAIT_IS_READY {
     !UNIVERSAL::isa( $_[0]->[_VALUE_SR_IDX], _PENDING_CLASS );
 }
 
-sub AWAIT_IS_CANCELLED { 0 };
+use constant AWAIT_IS_CANCELLED => 0;
 
 sub AWAIT_GET {
     delete $_UNHANDLED_REJECTIONS{$_[0]->[_VALUE_SR_IDX]};
@@ -406,7 +405,7 @@ sub AWAIT_GET {
     die ${ $_[0]->[_VALUE_SR_IDX] };
 }
 
-sub _noop {}
+use constant _noop => ();
 
 sub AWAIT_ON_READY {
     $_[0][_ON_READY_IMMEDIATE_IDX] = $_[1];

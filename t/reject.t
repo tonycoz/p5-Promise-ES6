@@ -93,7 +93,7 @@ sub reject_promise : Tests(2) {
     my $p2 = Promise::ES6->resolve(123);
 
   SKIP: {
-        skip 'Devel::Cover causes memory leaks here.', $self->num_tests() if $INC{'Devel/Cover.pm'};
+        #skip 'Devel::Cover causes memory leaks here.', $self->num_tests() if $INC{'Devel/Cover.pm'};
 
         my $reason;
 
