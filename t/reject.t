@@ -24,27 +24,27 @@ sub reject : Tests(1) {
     return;
 }
 
-#sub reject_undef : Tests(2) {
-#    my @warnings;
-#
-#    local $SIG{'__WARN__'} = sub { push @warnings, @_ };
-#
-#    Promise::ES6->reject(undef)->catch( sub {
-#        my @args= @_;
-#
-#        is_deeply( \@args, [undef], 'undef given to reject callback' );
-#    } );
-#
-#    my $this_file = __FILE__;
-#
-#    cmp_deeply( \@warnings, [
-#        all(
-#            re( qr<initialized> ),
-#            re( qr<\Q$this_file\E> ),
-#        ),
-#    ], 'warning happens' );
-#}
-#
+sub reject_undef : Tests(2) {
+    my @warnings;
+
+    local $SIG{'__WARN__'} = sub { push @warnings, @_ };
+
+    Promise::ES6->reject(undef)->catch( sub {
+        my @args= @_;
+
+        is_deeply( \@args, [undef], 'undef given to reject callback' );
+    } );
+
+    my $this_file = __FILE__;
+
+    cmp_deeply( \@warnings, [
+        all(
+            re( qr<initialized> ),
+            re( qr<\Q$this_file\E> ),
+        ),
+    ], 'warning happens' );
+}
+
 #sub reject_nothing : Tests(2) {
 #    my @warnings;
 #
