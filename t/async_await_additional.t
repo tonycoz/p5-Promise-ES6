@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::FailWarnings;
+use Test::FailWarnings -allow_deps => 1;
 use Test::Fatal;
 use Test::Deep;
 
