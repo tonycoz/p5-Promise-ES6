@@ -1,5 +1,5 @@
 on test => sub {
-    require $_ for (
+    requires $_ for (
         'autodie',
         'FindBin',
         'Test::Fatal',
@@ -8,13 +8,13 @@ on test => sub {
         'Test::FailWarnings',
     );
 
-    require 'Test::More' => 1.302103;  # skip() without test count
+    requires 'Test::More' => 1.302103;  # skip() without test count
 };
 
 on develop => sub {
-    require 'AnyEvent';
-    require 'IO::Async';
-    recommend 'Mojolicious';
+    requires 'AnyEvent';
+    requires 'IO::Async';
+    recommends 'Mojolicious';
 };
 
 configure_requires 'ExtUtils::MakeMaker::CPANfile';

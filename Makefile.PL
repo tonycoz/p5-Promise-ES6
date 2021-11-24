@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker::CPANfile;
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
-WriteMakefile1(
+WriteMakefile(
     META_MERGE => {
         'meta-spec' => { version => 2 },
         resources => {
