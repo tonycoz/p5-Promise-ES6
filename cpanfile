@@ -13,7 +13,7 @@ on test => sub {
 
 on develop => sub {
     requires 'AnyEvent';
-    requires 'IO::Async';
+    recommends 'IO::Async';
     recommends 'Mojolicious';
 };
 
