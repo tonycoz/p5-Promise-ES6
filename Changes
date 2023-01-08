@@ -1,5 +1,8 @@
 Revision history for Perl module Promise::ES6
 
+0.26
+- Skip async/await tests on DEBUGGING perls (fixes CPAN Testers).
+
 0.25 Tue 23 Nov 2021
 - Make async/await tests require a suitably modern F::AA.
 - Ignore warnings from F::AA in t/async_await_additional.t.
