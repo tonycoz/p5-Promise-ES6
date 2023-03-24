@@ -65,9 +65,9 @@ jobs:
       - name: perl -V
         run: perl -V
       - name: Install old Future
-        run: cpanm --notest Future::AsyncAwait@0.64
+        run: cpanm --sudo --notest Future::AsyncAwait@0.64
       - name: Install Dependencies
-        run: cpanm --notest --installdeps --with-configure --with-develop --verbose .
+        run: cpanm --sudo --notest --installdeps --with-configure --with-develop --verbose .
       - name: perl Makefile.PL
         run: perl Makefile.PL
       - name: Run Tests
