@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@main
-      - run: apt update && apt install -y cpanminus
+      - run: sudo apt update && sudo apt install -y cpanminus
       - name: perl -V
         run: perl -V
       - name: Install old Future
