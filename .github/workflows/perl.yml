@@ -56,6 +56,23 @@ jobs:
       - name: Run Tests
         run: prove -wlvmb t
 
+  linux-future-064:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@main
+      - run: apt update && apt install -y cpanminus
+      - name: perl -V
+        run: perl -V
+      - name: Install old Future
+        run: cpanm --notest Future::AsyncAwait@0.64
+      - name: Install Dependencies
+      - run: cpanm --notest --installdeps --with-configure --with-develop --verbose .
+      - name: perl Makefile.PL
+        run: perl Makefile.PL
+      - name: Run Tests
+        run: make test
+
   linux-debug:
     runs-on: ubuntu-latest
 
