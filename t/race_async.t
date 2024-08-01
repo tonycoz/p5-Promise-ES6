@@ -13,6 +13,14 @@ use PromiseTest;
 
 use Promise::ES6;
 
+sub _bind {
+    my ($sub, @args) = @_;
+
+    return sub {
+        $sub->(@args, @_);
+    };
+}
+
 {
     my $eventer = Eventer->new();
 
@@ -21,23 +29,29 @@ use Promise::ES6;
     my $p1 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
-        push @resolves, sub {
-            if ($eventer->has_happened('ready1') && !$eventer->has_happened('resolved1')) {
-                $resolve->(1);
-                $eventer->happen('resolved1');
-            }
-        };
+        push @resolves,
+          _bind(sub {
+                    my ($eventer, $resolve) = @_;
+
+                    if ($eventer->has_happened('ready1') && !$eventer->has_happened('resolved1')) {
+                        $resolve->(1);
+                        $eventer->happen('resolved1');
+                    }
+                }, $eventer, $resolve);
     });
 
     my $p2 = Promise::ES6->new(sub {
         my ($resolve, $reject) = @_;
 
-        push @resolves, sub {
-            if ($eventer->has_happened('ready2') && !$eventer->has_happened('resolved2')) {
-                $resolve->(2);
-                $eventer->happen('resolved2');
-            }
-        };
+        push @resolves,
+          _bind(sub {
+                    my ($eventer, $resolve) = @_;
+
+                    if ($eventer->has_happened('ready2') && !$eventer->has_happened('resolved2')) {
+                        $resolve->(2);
+                        $eventer->happen('resolved2');
+                    }
+                }, $eventer, $resolve);
     });
 
     my $pid = fork or do {
